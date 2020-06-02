@@ -14,4 +14,9 @@ const generateJWT = (id, username) => {
     );
 };
 
-module.exports = { generateJWT };
+const verifyJWT = (token) => {
+    const { id, username } = jwt.verify(token, process.env.JWT_SECRET);
+    return { id, username };
+};
+
+module.exports = { generateJWT, verifyJWT };

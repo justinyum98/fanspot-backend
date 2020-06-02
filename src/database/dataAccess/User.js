@@ -1,5 +1,13 @@
-const { v4: uuidv4 } = require('uuid');
 const UserModel = require('../models/User');
+
+const findUserById = async (id) => {
+    return new Promise((resolve, reject) => {
+        UserModel.findById(id, (err, user) => {
+            if (err) reject(err);
+            resolve(user);
+        });
+    });
+};
 
 const findUserByUsername = async ({ username }) => {
     return new Promise((resolve, reject) => {
@@ -20,19 +28,90 @@ const findUserByEmail = async ({ email }) => {
 };
 
 const createUser = async ({ username, password, email }) => {
-    const uuid = uuidv4();
-    const isArtist = false;
-
     return new Promise((resolve, reject) => {
-        UserModel.create({ uuid, username, password, email, isArtist }, (err, user) => {
+        UserModel.create(
+            {
+                username,
+                password,
+                email,
+                isArtist: false,
+                followers: [],
+                following: [],
+            },
+            (err, user) => {
+                if (err) reject(err);
+                resolve(user);
+            }
+        );
+    });
+};
+
+/**
+ * Updates a user's 'followers' field
+ * @param {String} userId - ID of follower
+ * @param {String} targetId - ID of user being followed
+ * @param {String} actionName - can either be 'add' or 'remove'
+ */
+const updateUserFollowers = async (userId, targetId, actionName) => {
+    return new Promise((resolve, reject) => {
+        let action;
+        if (actionName === 'add') {
+            action = { $push: { followers: targetId } };
+        } else if (actionName === 'remove') {
+            action = { $pull: { followers: targetId } };
+        } else {
+            reject(new Error('Action name not specified.'));
+        }
+
+        UserModel.findOneAndUpdate({ _id: userId }, action, (err, user) => {
             if (err) reject(err);
             resolve(user);
         });
     });
 };
 
+/**
+ * Updates a user's 'following' field
+ * @param {*} userId - ID of user being followed
+ * @param {*} targetId - ID of follower
+ * @param {*} actionName - can either be 'add' or 'remove'
+ */
+const updateUserFollowing = async (userId, targetId, actionName) => {
+    return new Promise((resolve, reject) => {
+        let action;
+        if (actionName === 'add') {
+            action = { $push: { following: targetId } };
+        } else if (actionName === 'remove') {
+            action = { $pull: { following: targetId } };
+        } else {
+            reject(new Error('Action name not specified.'));
+        }
+
+        UserModel.findOneAndUpdate({ _id: userId }, action, (err, user) => {
+            if (err) reject(err);
+            resolve(user);
+        });
+    });
+};
+
+const populateUserField = async (id, fieldName) => {
+    return new Promise((resolve, reject) => {
+        UserModel.findById(id, (findErr, user) => {
+            if (findErr) reject(findErr);
+            user.populate(fieldName, (populateErr, populatedUser) => {
+                if (populateErr) reject(populateErr);
+                resolve(populatedUser);
+            });
+        });
+    });
+};
+
 module.exports = {
+    findUserById,
     findUserByUsername,
     findUserByEmail,
     createUser,
+    updateUserFollowers,
+    updateUserFollowing,
+    populateUserField,
 };

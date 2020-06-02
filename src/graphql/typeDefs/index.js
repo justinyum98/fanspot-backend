@@ -11,14 +11,19 @@ const typeDefs = gql`
         # posts: [Post!]!
         # comments: [Comment!]!
         # activities: [Activity!]!
-        # followers: [User!]!
-        # following: [User!]!
+        followers: [User!]!
+        following: [User!]!
         # thirdParty: ThirdParty!
     }
 
     type AuthPayload {
         user: User!
         token: String!
+    }
+
+    type FollowPayload {
+        currentUser: User!
+        targetUser: User!
     }
 
     type Query {
@@ -28,6 +33,8 @@ const typeDefs = gql`
     type Mutation {
         login(username: String!, password: String!): AuthPayload
         register(username: String!, password: String!, email: EmailAddress!): AuthPayload
+        follow(targetUserId: String!): FollowPayload
+        unfollow(targetUserId: String!): FollowPayload
     }
 `;
 

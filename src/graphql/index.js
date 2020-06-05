@@ -1,7 +1,7 @@
 const { ApolloServer, makeExecutableSchema } = require('apollo-server-express');
 const { typeDefs: gqlsTypeDefs, resolvers: gqlsResolvers } = require('graphql-scalars');
-const typeDefs = require('./typeDefs');
-const resolvers = require('./resolvers');
+const { typeDefs } = require('./typeDefs');
+const { resolvers } = require('./resolvers');
 
 const mountGraphQL = (app) => {
     const server = new ApolloServer({

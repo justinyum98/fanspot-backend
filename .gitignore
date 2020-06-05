@@ -4,6 +4,7 @@ npm-debug.log
 
 # Local development
 *.env
+*.env.test
 *.dev
 .DS_Store
 .vscode

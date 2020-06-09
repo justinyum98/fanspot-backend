@@ -1,7 +1,7 @@
 const { createTestClient } = require('apollo-server-testing');
-const { createTestServer, connectTestDatabase, verifyTestingJWT } = require('./testUtils');
+const { createTestServer, connectTestDatabase, verifyJWT, getCachedUser } = require('./testUtils');
 const { REGISTER_USER, LOGIN_USER } = require('./mutations');
-const { findUserById, createUser } = require('../../database/dataAccess/User');
+const { findUserById, populateUser, createUser } = require('../../database/dataAccess/User');
 
 describe('Authentication feature', () => {
     let connection;
@@ -39,7 +39,8 @@ describe('Authentication feature', () => {
                 },
             });
             const { user, token } = res.data.register;
-            const actualUser = await findUserById(user.id);
+            let actualUser = await findUserById(user.id);
+            actualUser = await populateUser(actualUser);
             const expectedData = {
                 user: {
                     id: actualUser.id,
@@ -52,12 +53,14 @@ describe('Authentication feature', () => {
                 },
                 token,
             };
-            const decodedToken = verifyTestingJWT(token);
+            const decodedToken = verifyJWT(token);
+            const cachedUser = await getCachedUser(actualUser.id);
 
             expect(actualUser).toBeDefined();
             expect(expectedData).toEqual(res.data.register);
             expect(decodedToken.id).toEqual(actualUser.id);
             expect(decodedToken.username).toEqual(mockUser.username);
+            expect(cachedUser).toEqual(actualUser.toJSON());
         });
 
         // Note: Relies on previous test working properly, as it creates a user already.
@@ -121,6 +124,7 @@ describe('Authentication feature', () => {
                 password: mockUser.password,
                 email: mockUser.email,
             });
+            userDocument = await populateUser(userDocument);
         });
 
         it('can login a user with a username and password', async () => {
@@ -141,11 +145,13 @@ describe('Authentication feature', () => {
                 },
                 token,
             };
-            const decodedToken = verifyTestingJWT(token);
+            const decodedToken = verifyJWT(token);
+            const cachedUser = await getCachedUser(userDocument.id);
 
             expect(res.data.login).toEqual(expectedData);
             expect(decodedToken.id).toEqual(user.id);
             expect(decodedToken.username).toEqual(user.username);
+            expect(cachedUser).toEqual(userDocument.toJSON());
         });
 
         it('cannot login with the wrong username', async () => {

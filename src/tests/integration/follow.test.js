@@ -1,7 +1,12 @@
 const _ = require('lodash');
 const { createTestClient } = require('apollo-server-testing');
-const { createTestServer, connectTestDatabase, generateTestingJWT } = require('./testUtils');
-const { createUser } = require('../../database/dataAccess/User');
+const {
+    createTestServer,
+    connectTestDatabase,
+    getCachedUser,
+    generateTestingJWT,
+} = require('./testUtils');
+const { findUserById, createUser, populateUser } = require('../../database/dataAccess/User');
 const { FOLLOW_USER, UNFOLLOW_USER } = require('./mutations');
 
 describe('Follow feature', () => {
@@ -42,6 +47,9 @@ describe('Follow feature', () => {
                 },
             });
             const payload = res.data.follow;
+            // TODO: After fixing data access, uncomment
+            // const cachedCurrentUser = await getCachedUser(currentUser.id);
+            // const cachedTargetUser = await getCachedUser(targetUser.id);
 
             expect(payload.currentUser.id).toEqual(currentUser.id);
             expect(payload.currentUser.following.length).toEqual(1);
@@ -52,6 +60,10 @@ describe('Follow feature', () => {
             expect(payload.targetUser.followers.length).toEqual(1);
             expect(_.find(payload.targetUser.followers, ['id', currentUser.id])).toBeDefined();
             expect(payload.targetUser.following.length).toEqual(0);
+
+            // TODO: After fixing Data Access, uncomment
+            // expect(cachedCurrentUser).toEqual(currentUser.toJSON());
+            // expect(cachedTargetUser).toEqual(targetUser.toJSON());
         });
 
         // Note: Relies on test above
@@ -78,6 +90,8 @@ describe('Follow feature', () => {
                 },
             });
             const payload = res.data.unfollow;
+            const cachedCurrentUser = await getCachedUser(currentUser.id);
+            const cachedTargetUser = await getCachedUser(targetUser.id);
 
             expect(payload.currentUser.id).toEqual(currentUser.id);
             expect(payload.currentUser.following.length).toEqual(0);
@@ -86,6 +100,9 @@ describe('Follow feature', () => {
             expect(payload.targetUser.id).toEqual(targetUser.id);
             expect(payload.targetUser.followers.length).toEqual(0);
             expect(payload.targetUser.following.length).toEqual(0);
+
+            expect(cachedCurrentUser).toEqual(currentUser.toJSON());
+            expect(cachedTargetUser).toEqual(targetUser.toJSON());
         });
 
         it('cannot unfollow a user that you are not following', async () => {
@@ -101,6 +118,4 @@ describe('Follow feature', () => {
             expect(res.errors[0].message).toEqual('You are already not following that user.');
         });
     });
-
-    describe('Unfollow', () => {});
 });

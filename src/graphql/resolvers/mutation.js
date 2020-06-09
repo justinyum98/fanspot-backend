@@ -7,21 +7,24 @@ const {
     createUser,
     updateUserFollowers,
     updateUserFollowing,
-    populateUserField,
+    populateUser,
 } = require('../../database/dataAccess/User');
 const { generateJWT, verifyJWT } = require('../../jwt');
 const { isFollowingTargetUser, isFollowedByTargetUser } = require('./utils');
+const { cacheUser } = require('../../redis/utils');
 
 const Mutation = {
     Mutation: {
         login: async (parent, { username, password }) => {
-            const user = await findUserByUsername({ username });
+            let user = await findUserByUsername({ username });
             if (!user) {
                 throw new AuthenticationError('User with username does not exist.');
             }
             if (!(_.isEqual(username, user.username) && _.isEqual(password, user.password))) {
                 throw new AuthenticationError('Username and/or password is incorrect.');
             }
+            user = await populateUser(user);
+            await cacheUser(user);
             const token = generateJWT(user.id, user.username);
             return { user, token };
         },
@@ -34,7 +37,9 @@ const Mutation = {
             if (user) {
                 throw new AuthenticationError('Email is taken.');
             }
-            const newUser = await createUser({ username, password, email });
+            let newUser = await createUser({ username, password, email });
+            newUser = await populateUser(newUser);
+            await cacheUser(newUser);
             const token = generateJWT(newUser.id, newUser.username);
             return { user: newUser, token };
         },
@@ -51,8 +56,12 @@ const Mutation = {
             }
             await updateUserFollowing(id, targetUserId, 'add');
             await updateUserFollowers(targetUserId, id, 'add');
-            currentUser = await populateUserField(id, 'following');
-            targetUser = await populateUserField(targetUserId, 'followers');
+            currentUser = await findUserById(id);
+            targetUser = await findUserById(targetUserId);
+            currentUser = await populateUser(currentUser);
+            targetUser = await populateUser(targetUser);
+            await cacheUser(currentUser);
+            await cacheUser(targetUser);
             return { currentUser, targetUser };
         },
         unfollow: async (parent, { targetUserId }, { token }) => {
@@ -68,8 +77,12 @@ const Mutation = {
             }
             await updateUserFollowing(id, targetUserId, 'remove');
             await updateUserFollowers(targetUserId, id, 'remove');
-            currentUser = await populateUserField(id, 'following');
-            targetUser = await populateUserField(targetUserId, 'followers');
+            currentUser = await findUserById(id);
+            targetUser = await findUserById(targetUserId);
+            currentUser = await populateUser(currentUser);
+            targetUser = await populateUser(targetUser);
+            await cacheUser(currentUser);
+            await cacheUser(targetUser);
             return { currentUser, targetUser };
         },
     },

@@ -11,4 +11,12 @@ const UserSchema = new Schema({
     following: [{ type: Schema.Types.ObjectId, ref: 'User' }],
 });
 
+UserSchema.set('toJSON', {
+    virtuals: true,
+    transform: (doc, ret) => {
+        ret.id = ret._id.toString();
+        delete ret._id;
+    },
+});
+
 module.exports = UserSchema;

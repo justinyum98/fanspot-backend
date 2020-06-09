@@ -94,15 +94,24 @@ const updateUserFollowing = async (userId, targetId, actionName) => {
     });
 };
 
-const populateUserField = async (id, fieldName) => {
+/**
+ * Populates a user document.
+ * Returns the populated user document.
+ * @param {UserDocument} user
+ */
+const populateUser = async (user) => {
     return new Promise((resolve, reject) => {
-        UserModel.findById(id, (findErr, user) => {
-            if (findErr) reject(findErr);
-            user.populate(fieldName, (populateErr, populatedUser) => {
-                if (populateErr) reject(populateErr);
-                resolve(populatedUser);
-            });
-        });
+        user.populate('followers')
+            .populate('following')
+            .execPopulate()
+            .then(
+                (populatedUser) => {
+                    resolve(populatedUser);
+                },
+                (populateErr) => {
+                    reject(populateErr);
+                }
+            );
     });
 };
 
@@ -113,5 +122,5 @@ module.exports = {
     createUser,
     updateUserFollowers,
     updateUserFollowing,
-    populateUserField,
+    populateUser,
 };

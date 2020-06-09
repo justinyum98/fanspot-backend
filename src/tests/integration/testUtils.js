@@ -4,6 +4,8 @@ const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const { typeDefs } = require('../../graphql/typeDefs');
 const { resolvers } = require('../../graphql/resolvers');
+const { verifyJWT } = require('../../jwt');
+const { cacheUser, getCachedUser } = require('../../redis/utils');
 
 const createTestServer = (context = {}) =>
     new ApolloServer({
@@ -41,14 +43,11 @@ const generateTestingJWT = (id, username) => {
     );
 };
 
-const verifyTestingJWT = (token) => {
-    const { id, username } = jwt.verify(token, process.env.JWT_SECRET);
-    return { id, username };
-};
-
 module.exports = {
     createTestServer,
     connectTestDatabase,
     generateTestingJWT,
-    verifyTestingJWT,
+    verifyJWT,
+    cacheUser,
+    getCachedUser,
 };

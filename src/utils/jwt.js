@@ -10,7 +10,7 @@ const generateJWT = (id, username) => {
         {
             issuer: 'Fanspot',
             expiresIn: '2h',
-        }
+        },
     );
 };
 

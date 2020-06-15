@@ -1,5 +1,12 @@
 const { createTestClient } = require('apollo-server-testing');
-const { createTestServer, connectTestDatabase, verifyJWT, getCachedUser } = require('./testUtils');
+const {
+    createTestServer,
+    connectTestDatabase,
+    closeTestDatabase,
+    verifyJWT,
+    getCachedUser,
+    closeRedis,
+} = require('../testUtils');
 const { REGISTER_USER, LOGIN_USER } = require('./mutations');
 const { findUserById, populateUser, createUser } = require('../../database/dataAccess/User');
 
@@ -15,7 +22,8 @@ describe('Authentication feature', () => {
     });
 
     afterAll(async () => {
-        await connection.close();
+        await closeRedis();
+        await closeTestDatabase(connection);
     });
 
     describe('Register', () => {

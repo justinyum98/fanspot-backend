@@ -44,13 +44,9 @@ const FOLLOW_USER = gql`
                 email
                 following {
                     id
-                    username
-                    email
                 }
                 followers {
                     id
-                    username
-                    email
                 }
             }
             targetUser {
@@ -59,13 +55,9 @@ const FOLLOW_USER = gql`
                 email
                 following {
                     id
-                    username
-                    email
                 }
                 followers {
                     id
-                    username
-                    email
                 }
             }
         }
@@ -77,6 +69,8 @@ const UNFOLLOW_USER = gql`
         unfollow(targetUserId: $targetUserId) {
             currentUser {
                 id
+                username
+                email
                 following {
                     id
                 }
@@ -86,6 +80,8 @@ const UNFOLLOW_USER = gql`
             }
             targetUser {
                 id
+                username
+                email
                 following {
                     id
                 }

@@ -2,10 +2,10 @@ const { ApolloServer, makeExecutableSchema } = require('apollo-server-express');
 const { typeDefs: gqlsTypeDefs, resolvers: gqlsResolvers } = require('graphql-scalars');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
-const { typeDefs } = require('../../graphql/typeDefs');
-const { resolvers } = require('../../graphql/resolvers');
-const { verifyJWT } = require('../../jwt');
-const { cacheUser, getCachedUser } = require('../../redis/utils');
+const { typeDefs } = require('../graphql/typeDefs');
+const { resolvers } = require('../graphql/resolvers');
+const { verifyJWT } = require('../jwt');
+const { cacheUser, getCachedUser, closeRedis } = require('../redis/utils');
 
 const createTestServer = (context = {}) =>
     new ApolloServer({
@@ -29,6 +29,15 @@ const connectTestDatabase = async () => {
     return connection;
 };
 
+const closeTestDatabase = async (connection) => {
+    return new Promise((resolve, reject) => {
+        connection.close((err) => {
+            if (err) reject(err);
+            resolve();
+        });
+    });
+};
+
 const generateTestingJWT = (id, username) => {
     return jwt.sign(
         {
@@ -46,8 +55,10 @@ const generateTestingJWT = (id, username) => {
 module.exports = {
     createTestServer,
     connectTestDatabase,
+    closeTestDatabase,
     generateTestingJWT,
     verifyJWT,
     cacheUser,
     getCachedUser,
+    closeRedis,
 };

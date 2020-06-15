@@ -1,12 +1,14 @@
 const _ = require('lodash');
+const faker = require('faker');
 const { createTestClient } = require('apollo-server-testing');
 const {
     createTestServer,
     connectTestDatabase,
-    getCachedUser,
+    closeTestDatabase,
     generateTestingJWT,
-} = require('./testUtils');
-const { findUserById, createUser, populateUser } = require('../../database/dataAccess/User');
+    closeRedis,
+} = require('../testUtils');
+const { createUser, findUserById } = require('../../database/dataAccess/User');
 const { FOLLOW_USER, UNFOLLOW_USER } = require('./mutations');
 
 describe('Follow feature', () => {
@@ -19,14 +21,14 @@ describe('Follow feature', () => {
     beforeAll(async () => {
         connection = await connectTestDatabase();
         currentUser = await createUser({
-            username: 'testuser1',
-            password: 'password',
-            email: 'testuser1@email.com',
+            username: faker.internet.userName(),
+            password: faker.internet.password(),
+            email: faker.internet.email(),
         });
         targetUser = await createUser({
-            username: 'testuser2',
-            password: 'password',
-            email: 'testuser2@email.com',
+            username: faker.internet.userName(),
+            password: faker.internet.password(),
+            email: faker.internet.email(),
         });
         const token = generateTestingJWT(currentUser.id, currentUser.username);
         const context = { token };
@@ -35,11 +37,34 @@ describe('Follow feature', () => {
     });
 
     afterAll(async () => {
-        await connection.close();
+        await closeRedis();
+        await closeTestDatabase(connection);
     });
 
     describe('Follow', () => {
+        beforeEach(async () => {
+            currentUser = await findUserById(currentUser.id);
+            targetUser = await findUserById(targetUser.id);
+        });
+
         it('can follow another user', async () => {
+            const expectedPayload = {
+                currentUser: {
+                    id: currentUser.id,
+                    username: currentUser.username,
+                    email: currentUser.email,
+                    following: [{ id: targetUser.id }],
+                    followers: [],
+                },
+                targetUser: {
+                    id: targetUser.id,
+                    username: targetUser.username,
+                    email: targetUser.email,
+                    following: [],
+                    followers: [{ id: currentUser.id }],
+                },
+            };
+
             const res = await client.mutate({
                 mutation: FOLLOW_USER,
                 variables: {
@@ -47,26 +72,20 @@ describe('Follow feature', () => {
                 },
             });
             const payload = res.data.follow;
-            // TODO: After fixing data access, uncomment
-            // const cachedCurrentUser = await getCachedUser(currentUser.id);
-            // const cachedTargetUser = await getCachedUser(targetUser.id);
+
+            expect(payload).toEqual(expectedPayload);
 
             expect(payload.currentUser.id).toEqual(currentUser.id);
             expect(payload.currentUser.following.length).toEqual(1);
-            expect(_.find(payload.currentUser.following, ['id', targetUser.id])).toBeDefined();
+            expect(payload.currentUser.following[0].id).toEqual(payload.targetUser.id);
             expect(payload.currentUser.followers.length).toEqual(0);
 
             expect(payload.targetUser.id).toEqual(targetUser.id);
-            expect(payload.targetUser.followers.length).toEqual(1);
-            expect(_.find(payload.targetUser.followers, ['id', currentUser.id])).toBeDefined();
             expect(payload.targetUser.following.length).toEqual(0);
-
-            // TODO: After fixing Data Access, uncomment
-            // expect(cachedCurrentUser).toEqual(currentUser.toJSON());
-            // expect(cachedTargetUser).toEqual(targetUser.toJSON());
+            expect(payload.targetUser.followers.length).toEqual(1);
+            expect(payload.targetUser.followers[0].id).toEqual(payload.currentUser.id);
         });
 
-        // Note: Relies on test above
         it('cannot follow a user that you are already following', async () => {
             const res = await client.mutate({
                 mutation: FOLLOW_USER,
@@ -74,48 +93,64 @@ describe('Follow feature', () => {
                     targetUserId: targetUser.id,
                 },
             });
+            currentUser = await findUserById(currentUser.id);
+            targetUser = await findUserById(targetUser.id);
 
             expect(res.data.follow).toBeNull();
             expect(res.errors).toBeDefined();
-            expect(res.errors[0].message).toEqual('You are already following that user.');
-        });
-    });
+            expect(res.errors[0].message).toEqual('Already following user.');
 
-    describe('Unfollow', () => {
+            expect(currentUser.following.length).toEqual(1);
+            expect(targetUser.followers.length).toEqual(1);
+        });
+
         it('can unfollow another user', async () => {
+            expect(currentUser.following.length).toEqual(1);
+            expect(targetUser.followers.length).toEqual(1);
+
+            const expectedPayload = {
+                currentUser: {
+                    id: currentUser.id,
+                    username: currentUser.username,
+                    email: currentUser.email,
+                    following: [],
+                    followers: [],
+                },
+                targetUser: {
+                    id: targetUser.id,
+                    username: targetUser.username,
+                    email: targetUser.email,
+                    following: [],
+                    followers: [],
+                },
+            };
+
             const res = await client.mutate({
                 mutation: UNFOLLOW_USER,
                 variables: {
-                    targetUserId: targetUser.id,
+                    targetUserId: targetUser._id.toString(),
                 },
             });
+
             const payload = res.data.unfollow;
-            const cachedCurrentUser = await getCachedUser(currentUser.id);
-            const cachedTargetUser = await getCachedUser(targetUser.id);
 
-            expect(payload.currentUser.id).toEqual(currentUser.id);
-            expect(payload.currentUser.following.length).toEqual(0);
-            expect(payload.currentUser.followers.length).toEqual(0);
-
-            expect(payload.targetUser.id).toEqual(targetUser.id);
-            expect(payload.targetUser.followers.length).toEqual(0);
-            expect(payload.targetUser.following.length).toEqual(0);
-
-            expect(cachedCurrentUser).toEqual(currentUser.toJSON());
-            expect(cachedTargetUser).toEqual(targetUser.toJSON());
+            expect(payload).toEqual(expectedPayload);
         });
 
-        it('cannot unfollow a user that you are not following', async () => {
+        it('cannot unfollow user you are not following', async () => {
+            expect(currentUser.following.length).toEqual(0);
+            expect(targetUser.followers.length).toEqual(0);
+
             const res = await client.mutate({
                 mutation: UNFOLLOW_USER,
                 variables: {
-                    targetUserId: targetUser.id,
+                    targetUserId: targetUser._id.toString(),
                 },
             });
 
             expect(res.data.unfollow).toBeNull();
             expect(res.errors).toBeDefined();
-            expect(res.errors[0].message).toEqual('You are already not following that user.');
+            expect(res.errors[0].message).toEqual('Already not following user.');
         });
     });
 });

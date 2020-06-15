@@ -8,7 +8,7 @@ const generateJWT = (id, username) => {
         },
         process.env.JWT_SECRET,
         {
-            issuer: 'Justin Yum',
+            issuer: 'Fanspot',
             expiresIn: '2h',
         }
     );

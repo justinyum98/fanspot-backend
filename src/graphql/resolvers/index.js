@@ -1,6 +1,6 @@
 const _ = require('lodash');
-const { Query } = require('./query');
-const { Mutation } = require('./mutation');
+const { Query } = require('./Query');
+const { Mutation } = require('./Mutation');
 
 const resolvers = _.merge(Query, Mutation);
 

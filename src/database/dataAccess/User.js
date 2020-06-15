@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const UserModel = require('../models/User');
+const UserModel = require('../models/UserModel');
 
 // PRIVATE HELPER METHODS
 /**

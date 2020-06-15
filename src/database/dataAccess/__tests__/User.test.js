@@ -1,5 +1,5 @@
 const faker = require('faker');
-const { connectTestDatabase, closeTestDatabase } = require('../../../tests/testUtils');
+const { connectTestDatabase, closeTestDatabase } = require('../..');
 const { findUserById, createUser, followUser, unfollowUser } = require('../User');
 
 describe('User data access methods', () => {

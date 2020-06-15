@@ -1,14 +1,45 @@
 const { createTestClient } = require('apollo-server-testing');
-const {
-    createTestServer,
-    connectTestDatabase,
-    closeTestDatabase,
-    verifyJWT,
-    getCachedUser,
-    closeRedis,
-} = require('../testUtils');
-const { REGISTER_USER, LOGIN_USER } = require('./mutations');
+const { gql } = require('apollo-server-express');
+const { createTestServer } = require('../../graphql');
+const { connectTestDatabase, closeTestDatabase } = require('../../database');
+const { getCachedUser, closeRedis } = require('../../redis/actions');
+const { verifyJWT } = require('../../utils/jwt');
 const { findUserById, populateUser, createUser } = require('../../database/dataAccess/User');
+
+const LOGIN_USER = gql`
+    mutation LoginUser($username: String!, $password: String!) {
+        login(username: $username, password: $password) {
+            user {
+                id
+                username
+                password
+                email
+            }
+            token
+        }
+    }
+`;
+
+const REGISTER_USER = gql`
+    mutation RegisterUser($username: String!, $password: String!, $email: EmailAddress!) {
+        register(username: $username, password: $password, email: $email) {
+            user {
+                id
+                username
+                password
+                email
+                isArtist
+                followers {
+                    id
+                }
+                following {
+                    id
+                }
+            }
+            token
+        }
+    }
+`;
 
 describe('Authentication feature', () => {
     let connection;

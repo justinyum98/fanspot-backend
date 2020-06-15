@@ -1,15 +1,69 @@
-const _ = require('lodash');
 const faker = require('faker');
 const { createTestClient } = require('apollo-server-testing');
-const {
-    createTestServer,
-    connectTestDatabase,
-    closeTestDatabase,
-    generateTestingJWT,
-    closeRedis,
-} = require('../testUtils');
+const { gql } = require('apollo-server-express');
+const { createTestServer } = require('../../graphql');
+const { connectTestDatabase, closeTestDatabase } = require('../../database');
+const { closeRedis } = require('../../redis/actions');
+const { generateJWT } = require('../../utils/jwt');
 const { createUser, findUserById } = require('../../database/dataAccess/User');
-const { FOLLOW_USER, UNFOLLOW_USER } = require('./mutations');
+
+const FOLLOW_USER = gql`
+    mutation FollowUser($targetUserId: String!) {
+        follow(targetUserId: $targetUserId) {
+            currentUser {
+                id
+                username
+                email
+                following {
+                    id
+                }
+                followers {
+                    id
+                }
+            }
+            targetUser {
+                id
+                username
+                email
+                following {
+                    id
+                }
+                followers {
+                    id
+                }
+            }
+        }
+    }
+`;
+
+const UNFOLLOW_USER = gql`
+    mutation UnfollowUser($targetUserId: String!) {
+        unfollow(targetUserId: $targetUserId) {
+            currentUser {
+                id
+                username
+                email
+                following {
+                    id
+                }
+                followers {
+                    id
+                }
+            }
+            targetUser {
+                id
+                username
+                email
+                following {
+                    id
+                }
+                followers {
+                    id
+                }
+            }
+        }
+    }
+`;
 
 describe('Follow feature', () => {
     let connection;
@@ -30,7 +84,7 @@ describe('Follow feature', () => {
             password: faker.internet.password(),
             email: faker.internet.email(),
         });
-        const token = generateTestingJWT(currentUser.id, currentUser.username);
+        const token = generateJWT(currentUser.id, currentUser.username);
         const context = { token };
         server = createTestServer(context);
         client = createTestClient(server);

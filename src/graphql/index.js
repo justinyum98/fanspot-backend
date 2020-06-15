@@ -23,4 +23,16 @@ const mountGraphQL = (app) => {
     return { app, server };
 };
 
-module.exports = { mountGraphQL };
+const createTestServer = (context = {}) =>
+    new ApolloServer({
+        schema: makeExecutableSchema({
+            typeDefs: [...gqlsTypeDefs, typeDefs],
+            resolvers: {
+                ...gqlsResolvers,
+                ...resolvers,
+            },
+        }),
+        context: () => context,
+    });
+
+module.exports = { mountGraphQL, createTestServer };

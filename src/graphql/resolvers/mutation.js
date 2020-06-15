@@ -8,8 +8,8 @@ const {
     followUser,
     unfollowUser,
 } = require('../../database/dataAccess/User');
-const { generateJWT, verifyJWT } = require('../../jwt');
-const { cacheUser } = require('../../redis/utils');
+const { generateJWT, verifyJWT } = require('../../utils/jwt');
+const { cacheUser } = require('../../redis/actions');
 
 const Mutation = {
     Mutation: {

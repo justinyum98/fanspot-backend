@@ -1,11 +1,14 @@
-const faker = require('faker');
-const { createTestClient } = require('apollo-server-testing');
-const { gql } = require('apollo-server-express');
-const { createTestServer } = require('../../graphql');
-const { connectTestDatabase, closeTestDatabase } = require('../../database');
-const { closeRedis } = require('../../redis/actions');
-const { generateJWT } = require('../../utils/jwt');
-const { createUser, findUserById } = require('../../database/dataAccess/User');
+import mongoose from 'mongoose';
+import faker = require('faker');
+import { createTestClient, ApolloServerTestClient } from 'apollo-server-testing';
+import { gql, ApolloServer } from 'apollo-server-express';
+import { createTestServer } from '../../src/graphql';
+import { FollowPayload } from '../../src/graphql/types';
+import { connectDatabase, closeDatabase } from '../../src/database';
+import { UserDocument } from '../../src/database/models/UserModel';
+import { closeRedis } from '../../src/redis/actions';
+import { generateJWT } from '../../src/utils/jwt';
+import { createUser, findUserById } from '../../src/database/dataAccess/User';
 
 const FOLLOW_USER = gql`
     mutation FollowUser($targetUserId: String!) {
@@ -66,24 +69,16 @@ const UNFOLLOW_USER = gql`
 `;
 
 describe('Follow feature', () => {
-    let connection;
-    let server;
-    let client;
-    let currentUser;
-    let targetUser;
+    let connection: mongoose.Connection;
+    let server: ApolloServer;
+    let client: ApolloServerTestClient;
+    let currentUser: UserDocument;
+    let targetUser: UserDocument;
 
     beforeAll(async () => {
-        connection = await connectTestDatabase();
-        currentUser = await createUser({
-            username: faker.internet.userName(),
-            password: faker.internet.password(),
-            email: faker.internet.email(),
-        });
-        targetUser = await createUser({
-            username: faker.internet.userName(),
-            password: faker.internet.password(),
-            email: faker.internet.email(),
-        });
+        connection = await connectDatabase();
+        currentUser = await createUser(faker.internet.userName(), faker.internet.password(), faker.internet.email());
+        targetUser = await createUser(faker.internet.userName(), faker.internet.password(), faker.internet.email());
         const token = generateJWT(currentUser.id, currentUser.username);
         const context = { token };
         server = createTestServer(context);
@@ -92,7 +87,7 @@ describe('Follow feature', () => {
 
     afterAll(async () => {
         await closeRedis();
-        await closeTestDatabase(connection);
+        await closeDatabase(connection);
     });
 
     describe('Follow', () => {
@@ -102,7 +97,7 @@ describe('Follow feature', () => {
         });
 
         it('can follow another user', async () => {
-            const expectedPayload = {
+            const expectedPayload: FollowPayload = {
                 currentUser: {
                     id: currentUser.id,
                     username: currentUser.username,
@@ -162,7 +157,7 @@ describe('Follow feature', () => {
             expect(currentUser.following.length).toEqual(1);
             expect(targetUser.followers.length).toEqual(1);
 
-            const expectedPayload = {
+            const expectedPayload: FollowPayload = {
                 currentUser: {
                     id: currentUser.id,
                     username: currentUser.username,

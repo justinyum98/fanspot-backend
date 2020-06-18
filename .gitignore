@@ -1,3 +1,18 @@
+lib-cov
+*.seed
+*.log
+*.csv
+*.dat
+*.out
+*.pid
+*.gz
+*.swp
+
+pids
+logs
+results
+tmp
+
 # Node build artifacts
 node_modules
 npm-debug.log
@@ -12,3 +27,6 @@ npm-debug.log
 # Docker
 Dockerfile
 docker-compose.yml
+
+dist/**/*
+coverage

@@ -1,9 +1,10 @@
-const { ApolloServer, makeExecutableSchema } = require('apollo-server-express');
-const { typeDefs: gqlsTypeDefs, resolvers: gqlsResolvers } = require('graphql-scalars');
-const { typeDefs } = require('./typeDefs');
-const { resolvers } = require('./resolvers');
+import express = require('express');
+import { ApolloServer, makeExecutableSchema } from 'apollo-server-express';
+import { typeDefs as gqlsTypeDefs, resolvers as gqlsResolvers } from 'graphql-scalars';
+import { typeDefs } from './typeDefs';
+import { resolvers } from './resolvers';
 
-const mountGraphQL = (app) => {
+export function mountGraphQL(app: express.Express): { app: express.Express; server: ApolloServer } {
     const server = new ApolloServer({
         schema: makeExecutableSchema({
             typeDefs: [...gqlsTypeDefs, typeDefs],
@@ -21,10 +22,10 @@ const mountGraphQL = (app) => {
     server.applyMiddleware({ app });
 
     return { app, server };
-};
+}
 
-const createTestServer = (context = {}) =>
-    new ApolloServer({
+export function createTestServer(context = {}): ApolloServer {
+    return new ApolloServer({
         schema: makeExecutableSchema({
             typeDefs: [...gqlsTypeDefs, typeDefs],
             resolvers: {
@@ -34,5 +35,4 @@ const createTestServer = (context = {}) =>
         }),
         context: () => context,
     });
-
-module.exports = { mountGraphQL, createTestServer };
+}

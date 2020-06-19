@@ -17,6 +17,8 @@ export function mountGraphQL(app: express.Express): { app: express.Express; serv
             const token = req.headers.authorization || '';
             return { token };
         },
+        introspection: true,
+        playground: true,
     });
 
     server.applyMiddleware({ app });

@@ -14,6 +14,7 @@ describe('User data access methods', () => {
     });
 
     afterAll(async () => {
+        await connection.dropDatabase();
         await closeDatabase(connection);
     });
 

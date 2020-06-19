@@ -87,6 +87,7 @@ describe('Follow feature', () => {
 
     afterAll(async () => {
         await closeRedis();
+        await connection.dropDatabase();
         await closeDatabase(connection);
     });
 

@@ -1,18 +1,21 @@
-const faker = require('faker');
-const { connectTestDatabase, closeTestDatabase } = require('../..');
-const { findUserById, createUser, followUser, unfollowUser } = require('../User');
+import mongoose = require('mongoose');
+import faker = require('faker');
+import { connectDatabase, closeDatabase } from '../../src/database';
+import { UserDocument } from '../../src/database/models/UserModel';
+import { findUserById, createUser, followUser, unfollowUser } from '../../src/database/dataAccess/User';
 
 describe('User data access methods', () => {
-    let connection;
-    let currentUser;
-    let targetUser;
+    let connection: mongoose.Connection;
+    let currentUser: UserDocument;
+    let targetUser: UserDocument;
 
     beforeAll(async () => {
-        connection = await connectTestDatabase();
+        connection = await connectDatabase();
     });
 
     afterAll(async () => {
-        await closeTestDatabase(connection);
+        await connection.dropDatabase();
+        await closeDatabase(connection);
     });
 
     // Tests rely on each other
@@ -23,7 +26,7 @@ describe('User data access methods', () => {
             email: faker.internet.email(),
         };
 
-        currentUser = await createUser(requiredData);
+        currentUser = await createUser(requiredData.username, requiredData.password, requiredData.email);
         const userObject = currentUser.toObject();
 
         expect(userObject.id).toBeDefined();
@@ -36,13 +39,9 @@ describe('User data access methods', () => {
     });
 
     it('can follow a user and update both users', async () => {
-        targetUser = await createUser({
-            username: faker.internet.userName(),
-            password: faker.internet.password(),
-            email: faker.internet.email(),
-        });
+        targetUser = await createUser(faker.internet.userName(), faker.internet.password(), faker.internet.email());
 
-        const { currentUserDoc, targetUserDoc } = await followUser(currentUser, targetUser);
+        const [currentUserDoc, targetUserDoc] = await followUser(currentUser, targetUser);
         currentUser = currentUserDoc;
         targetUser = targetUserDoc;
 
@@ -53,16 +52,14 @@ describe('User data access methods', () => {
     });
 
     it('cannot follow a user again', async () => {
-        await expect(followUser(currentUser, targetUser)).rejects.toThrow(
-            new Error('Already following user.')
-        );
+        await expect(followUser(currentUser, targetUser)).rejects.toThrow(new Error('Already following user.'));
     });
 
     it('can unfollow a user and update both users', async () => {
         currentUser = await findUserById(currentUser._id.toString());
         targetUser = await findUserById(targetUser._id.toString());
 
-        const { currentUserDoc, targetUserDoc } = await unfollowUser(currentUser, targetUser);
+        const [currentUserDoc, targetUserDoc] = await unfollowUser(currentUser, targetUser);
         currentUser = currentUserDoc;
         targetUser = targetUserDoc;
 
@@ -74,8 +71,6 @@ describe('User data access methods', () => {
     });
 
     it("cannot unfollow a user that isn't being followed", async () => {
-        await expect(unfollowUser(currentUser, targetUser)).rejects.toThrow(
-            new Error('Already not following user.')
-        );
+        await expect(unfollowUser(currentUser, targetUser)).rejects.toThrow(new Error('Already not following user.'));
     });
 });

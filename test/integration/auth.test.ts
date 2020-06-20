@@ -1,10 +1,13 @@
-const { createTestClient } = require('apollo-server-testing');
-const { gql } = require('apollo-server-express');
-const { createTestServer } = require('../../graphql');
-const { connectTestDatabase, closeTestDatabase } = require('../../database');
-const { getCachedUser, closeRedis } = require('../../redis/actions');
-const { verifyJWT } = require('../../utils/jwt');
-const { findUserById, populateUser, createUser } = require('../../database/dataAccess/User');
+import { createTestClient, ApolloServerTestClient } from 'apollo-server-testing';
+import { gql, ApolloServer } from 'apollo-server-express';
+import mongoose from 'mongoose';
+import { createTestServer } from '../../src/graphql';
+import { connectDatabase, closeDatabase } from '../../src/database';
+import { getCachedUser, closeRedis } from '../../src/redis/actions';
+import { verifyJWT } from '../../src/utils/jwt';
+import { findUserById, populateUser, createUser } from '../../src/database/dataAccess/User';
+import { UserDocument } from '../../src/database/models/UserModel';
+import { AuthPayload } from '../../src/graphql/types';
 
 const LOGIN_USER = gql`
     mutation LoginUser($username: String!, $password: String!) {
@@ -42,19 +45,20 @@ const REGISTER_USER = gql`
 `;
 
 describe('Authentication feature', () => {
-    let connection;
-    let server;
-    let client;
+    let connection: mongoose.Connection;
+    let server: ApolloServer;
+    let client: ApolloServerTestClient;
 
     beforeAll(async () => {
-        connection = await connectTestDatabase();
+        connection = await connectDatabase();
         server = createTestServer();
         client = createTestClient(server);
     });
 
     afterAll(async () => {
         await closeRedis();
-        await closeTestDatabase(connection);
+        await connection.dropDatabase();
+        await closeDatabase(connection);
     });
 
     describe('Register', () => {
@@ -78,9 +82,9 @@ describe('Authentication feature', () => {
                 },
             });
             const { user, token } = res.data.register;
-            let actualUser = await findUserById(user.id);
+            let actualUser: UserDocument = await findUserById(user.id);
             actualUser = await populateUser(actualUser);
-            const expectedData = {
+            const expectedData: AuthPayload = {
                 user: {
                     id: actualUser.id,
                     username: mockUser.username,
@@ -92,13 +96,13 @@ describe('Authentication feature', () => {
                 },
                 token,
             };
-            const decodedToken = verifyJWT(token);
+            const decodedToken = await verifyJWT(token);
             const cachedUser = await getCachedUser(actualUser.id);
 
             expect(actualUser).toBeDefined();
             expect(expectedData).toEqual(res.data.register);
-            expect(decodedToken.id).toEqual(actualUser.id);
-            expect(decodedToken.username).toEqual(mockUser.username);
+            expect((decodedToken as any).id).toEqual(actualUser.id);
+            expect((decodedToken as any).username).toEqual(mockUser.username);
             expect(cachedUser).toEqual(actualUser.toJSON());
         });
 
@@ -148,8 +152,8 @@ describe('Authentication feature', () => {
     });
 
     describe('Login', () => {
-        let mockUser;
-        let userDocument;
+        let mockUser: any;
+        let userDocument: UserDocument;
 
         beforeAll(async () => {
             await connection.dropDatabase();
@@ -158,11 +162,7 @@ describe('Authentication feature', () => {
                 password: 'password',
                 email: 'testuser123@email.com',
             };
-            userDocument = await createUser({
-                username: mockUser.username,
-                password: mockUser.password,
-                email: mockUser.email,
-            });
+            userDocument = await createUser(mockUser.username, mockUser.password, mockUser.email);
             userDocument = await populateUser(userDocument);
         });
 
@@ -184,12 +184,12 @@ describe('Authentication feature', () => {
                 },
                 token,
             };
-            const decodedToken = verifyJWT(token);
+            const decodedToken = await verifyJWT(token);
             const cachedUser = await getCachedUser(userDocument.id);
 
             expect(res.data.login).toEqual(expectedData);
-            expect(decodedToken.id).toEqual(user.id);
-            expect(decodedToken.username).toEqual(user.username);
+            expect((decodedToken as any).id).toEqual(user.id);
+            expect((decodedToken as any).username).toEqual(user.username);
             expect(cachedUser).toEqual(userDocument.toJSON());
         });
 

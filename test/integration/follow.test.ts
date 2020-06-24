@@ -10,24 +10,6 @@ import { closeRedis } from '../../src/redis/actions';
 import { generateJWT } from '../../src/utils/jwt';
 import { createUser, findUserById } from '../../src/database/dataAccess/User';
 
-const FOLLOW_USER = gql`
-    mutation FollowUser($targetUserId: String!) {
-        follow(targetUserId: $targetUserId) {
-            currentUserFollowing
-            targetUserFollowers
-        }
-    }
-`;
-
-const UNFOLLOW_USER = gql`
-    mutation UnfollowUser($targetUserId: String!) {
-        unfollow(targetUserId: $targetUserId) {
-            currentUserFollowing
-            targetUserFollowers
-        }
-    }
-`;
-
 describe('Follow feature', () => {
     let connection: mongoose.Connection;
 
@@ -50,28 +32,8 @@ describe('Follow feature', () => {
         const FOLLOW_USER = gql`
             mutation FollowUser($targetUserId: String!) {
                 follow(targetUserId: $targetUserId) {
-                    currentUser {
-                        id
-                        username
-                        email
-                        following {
-                            id
-                        }
-                        followers {
-                            id
-                        }
-                    }
-                    targetUser {
-                        id
-                        username
-                        email
-                        following {
-                            id
-                        }
-                        followers {
-                            id
-                        }
-                    }
+                    currentUserFollowing
+                    targetUserFollowers
                 }
             }
         `;
@@ -79,28 +41,8 @@ describe('Follow feature', () => {
         const UNFOLLOW_USER = gql`
             mutation UnfollowUser($targetUserId: String!) {
                 unfollow(targetUserId: $targetUserId) {
-                    currentUser {
-                        id
-                        username
-                        email
-                        following {
-                            id
-                        }
-                        followers {
-                            id
-                        }
-                    }
-                    targetUser {
-                        id
-                        username
-                        email
-                        following {
-                            id
-                        }
-                        followers {
-                            id
-                        }
-                    }
+                    currentUserFollowing
+                    targetUserFollowers
                 }
             }
         `;
@@ -139,7 +81,6 @@ describe('Follow feature', () => {
                     targetUserId: targetUser.id,
                 },
             });
-            console.log(res);
             const payload = res.data.follow;
 
             expect(payload).toEqual(expectedPayload);
@@ -210,18 +151,8 @@ describe('Follow feature', () => {
         const GET_CURRENT_USER_FOLLOWING = gql`
             query GetCurrentUserFollowing {
                 getCurrentUserFollowing {
-                    user {
-                        id
-                        username
-                        email
-                        isArtist
-                        following {
-                            id
-                            username
-                            email
-                            isArtist
-                        }
-                    }
+                    id
+                    username
                 }
             }
         `;
@@ -229,14 +160,26 @@ describe('Follow feature', () => {
         const GET_CURRENT_USER_FOLLOWERS = gql`
             query GetCurrentUserFollowers {
                 getCurrentUserFollowers {
-                    user {
-                        id
-                        username
-                        followers {
-                            id
-                            username
-                        }
-                    }
+                    id
+                    username
+                }
+            }
+        `;
+
+        const GET_USER_FOLLOWING = gql`
+            query GetUserFollowing($userId: String!) {
+                getUserFollowing(userId: $userId) {
+                    id
+                    username
+                }
+            }
+        `;
+
+        const GET_USER_FOLLOWERS = gql`
+            query GetUserFollowers($userId: String!) {
+                getUserFollowers(userId: $userId) {
+                    id
+                    username
                 }
             }
         `;
@@ -257,33 +200,90 @@ describe('Follow feature', () => {
             await connection.dropDatabase();
         });
 
-        it("can get a user's list of followers", async () => {
+        it("can get current user's list of followers", async () => {
             // Make targetUser follow currentUser
             targetUser.following.push(currentUser.id);
             await targetUser.save();
             // Update currentUser's followers
             currentUser.followers.push(targetUser.id);
             await currentUser.save();
-            const expectedPayload = {
-                user: {
-                    id: currentUser.id,
-                    username: currentUser.username,
-                    followers: [
-                        {
-                            id: targetUser.id,
-                            username: targetUser.username,
-                            email: targetUser.email,
-                            isArtist: targetUser.isArtist,
-                        },
-                    ],
+            const expectedPayload: { id: string; username: string }[] = [
+                {
+                    id: targetUser.id,
+                    username: targetUser.username,
                 },
-            };
+            ];
 
             // Retreive currentUser's followers
             const res = await client.query({
                 query: GET_CURRENT_USER_FOLLOWERS,
             });
+            console.log('getCurrentUserFollowers:', res);
             const payload = res.data.getCurrentUserFollowers;
+
+            expect(payload).toEqual(expectedPayload);
+        });
+
+        it("can get current user's list of following", async () => {
+            // Make currentUser follow targetUser
+            currentUser.following.push(targetUser.id);
+            await currentUser.save();
+            // Update targetUser's followers
+            targetUser.followers.push(currentUser.id);
+            await targetUser.save();
+            const expectedPayload: { id: string; username: string }[] = [
+                {
+                    id: targetUser.id,
+                    username: targetUser.username,
+                },
+            ];
+
+            // Retrieve currentUser's following
+            const res = await client.query({
+                query: GET_CURRENT_USER_FOLLOWING,
+            });
+            console.log('getCurrentUserFollowing:', res);
+            const payload = res.data.getCurrentUserFollowing;
+
+            expect(payload).toEqual(expectedPayload);
+        });
+
+        it("can get another user's list of following", async () => {
+            const expectedPayload = [
+                {
+                    id: currentUser.id,
+                    username: currentUser.username,
+                },
+            ];
+
+            const res = await client.query({
+                query: GET_USER_FOLLOWING,
+                variables: {
+                    userId: targetUser.id,
+                },
+            });
+            console.log(res);
+            const payload = res.data.getUserFollowing;
+
+            expect(payload).toEqual(expectedPayload);
+        });
+
+        it("can get another user's list of followers", async () => {
+            const expectedPayload = [
+                {
+                    id: currentUser.id,
+                    username: currentUser.username,
+                },
+            ];
+
+            const res = await client.query({
+                query: GET_USER_FOLLOWERS,
+                variables: {
+                    userId: targetUser.id,
+                },
+            });
+            console.log(res);
+            const payload = res.data.getUserFollowers;
 
             expect(payload).toEqual(expectedPayload);
         });

@@ -10,6 +10,7 @@ export const Query = {
         sayHello: (): string => 'hello',
         getUserFollowers: async (parent: any, args: { userId: string }, context: any): Promise<Follower[]> => {
             let targetUser: UserDocument = await findUserById(args.userId);
+            if (!targetUser.privacy.follow) throw new Error("User's follow setting is set to private.");
             targetUser = await targetUser.populate('followers', 'id username profilePictureUrl').execPopulate();
             const followers: mongoose.Types.ObjectId[] | UserDocument[] = targetUser.followers.toObject();
             const followersPayload: Follower[] = (followers as UserDocument[]).map((user: UserDocument) => {
@@ -19,6 +20,7 @@ export const Query = {
         },
         getUserFollowing: async (parent: any, args: { userId: string }, context: any): Promise<Follower[]> => {
             let targetUser: UserDocument = await findUserById(args.userId);
+            if (!targetUser.privacy.follow) throw new Error("User's follow setting is set to private.");
             targetUser = await targetUser.populate('following', 'id username profilePictureUrl').execPopulate();
             const following: mongoose.Types.ObjectId[] | UserDocument[] = targetUser.following.toObject();
             const followingPayload: Follower[] = (following as UserDocument[]).map((user: UserDocument) => {

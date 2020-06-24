@@ -253,6 +253,10 @@ describe('Follow feature', () => {
         });
 
         it("can get another user's list of following", async () => {
+            // Set follow privacy setting to public
+            targetUser.privacy.follow = true;
+            await targetUser.save();
+
             const expectedPayload: Follower[] = [
                 {
                     id: currentUser.id,
@@ -290,6 +294,37 @@ describe('Follow feature', () => {
             const payload = res.data.getUserFollowers;
 
             expect(payload).toEqual(expectedPayload);
+        });
+
+        it("cannot get another user's list of followers if follow privacy setting is private", async () => {
+            targetUser.privacy.follow = false;
+            await targetUser.save();
+
+            const res = await client.query({
+                query: GET_USER_FOLLOWERS,
+                variables: {
+                    userId: targetUser.id,
+                },
+            });
+            console.log(res);
+
+            expect(res.data).toBeNull();
+            expect(res.errors).toBeDefined();
+            expect(res.errors[0].message).toEqual("User's follow setting is set to private.");
+        });
+
+        it("cannot get another user's list of following if follow privacy setting is private", async () => {
+            const res = await client.query({
+                query: GET_USER_FOLLOWING,
+                variables: {
+                    userId: targetUser.id,
+                },
+            });
+            console.log(res);
+
+            expect(res.data).toBeNull();
+            expect(res.errors).toBeDefined();
+            expect(res.errors[0].message).toEqual("User's follow setting is set to private.");
         });
     });
 });

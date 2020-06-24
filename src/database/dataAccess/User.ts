@@ -35,6 +35,10 @@ export async function createUser(username: string, password: string, email: stri
             username,
             password,
             email,
+            profilePictureUrl: null,
+            privacy: {
+                follow: false,
+            },
             isArtist: false,
             followers: [],
             following: [],

@@ -1,9 +1,15 @@
 import mongoose = require('mongoose');
 
+export type Privacy = {
+    follow: boolean;
+};
+
 export type UserDocument = mongoose.Document & {
     username: string;
     password: string;
     email: string;
+    profilePictureUrl: string;
+    privacy: Privacy;
     isArtist: boolean;
     followers: mongoose.Types.Array<mongoose.Types.ObjectId> | mongoose.Types.DocumentArray<UserDocument>;
     following: mongoose.Types.Array<mongoose.Types.ObjectId> | mongoose.Types.DocumentArray<UserDocument>;
@@ -15,6 +21,8 @@ export type UserObject = {
     username?: string;
     password?: string;
     email?: string;
+    profilePictureUrl?: string;
+    privacy?: Privacy;
     isArtist?: boolean;
     followers?: string[];
     following?: string[];
@@ -26,6 +34,8 @@ export type UserJSON = {
     username?: string;
     password?: string;
     email?: string;
+    profilePictureUrl?: string;
+    privacy?: Privacy;
     isArtist?: boolean;
     followers?: string[];
     following?: string[];
@@ -45,6 +55,17 @@ const UserSchema: mongoose.Schema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true,
+    },
+    profilePictureUrl: {
+        type: String,
+        required: false,
+    },
+    privacy: {
+        // If true, the user's following and followers lists are public.
+        follow: {
+            type: Boolean,
+            required: true,
+        },
     },
     isArtist: {
         type: Boolean,
@@ -77,8 +98,8 @@ UserSchema.set('toJSON', {
 UserSchema.set('toObject', {
     versionKey: false,
     virtuals: true,
-    transform: (doc, ret) => {
-        // IMPORTANT: MUST DEPOPULATE FIELDS BEFORE USING toObject.
+    transform: (doc: UserDocument, ret) => {
+        // IMPORTANT: MUST DEPOPULATE DOC BEFORE USING toObject.
         ret.id = ret._id.toString();
         delete ret._id;
         ret.following.forEach(

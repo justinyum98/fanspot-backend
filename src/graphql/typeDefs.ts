@@ -7,13 +7,19 @@ export const typeDefs = gql`
         password: String!
         email: EmailAddress!
         isArtist: Boolean!
-        # profilePictureURL: URL
+        profilePictureUrl: URL
+        privacy: Privacy!
+        followers: [String!]! # String! being the id
+        following: [String!]! # String! being the id
+        # tokens: ThirdParty!
         # posts: [Post!]!
         # comments: [Comment!]!
         # activities: [Activity!]!
-        followers: [User!]!
-        following: [User!]!
-        # thirdParty: ThirdParty!
+    }
+
+    type Privacy {
+        # If true, your following and followers lists are public.
+        follow: Boolean!
     }
 
     type AuthPayload {
@@ -30,6 +36,7 @@ export const typeDefs = gql`
     type Follower {
         id: String!
         username: String!
+        profilePictureUrl: URL
     }
 
     type Query {

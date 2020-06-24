@@ -3,7 +3,7 @@ import faker = require('faker');
 import { createTestClient, ApolloServerTestClient } from 'apollo-server-testing';
 import { gql, ApolloServer } from 'apollo-server-express';
 import { createTestServer } from '../../src/graphql';
-import { FollowMutationPayload } from '../../src/graphql/types';
+import { Follower, FollowMutationPayload } from '../../src/graphql/types';
 import { connectDatabase, closeDatabase } from '../../src/database';
 import { UserDocument } from '../../src/database/models/UserModel';
 import { closeRedis } from '../../src/redis/actions';
@@ -153,6 +153,7 @@ describe('Follow feature', () => {
                 getCurrentUserFollowing {
                     id
                     username
+                    profilePictureUrl
                 }
             }
         `;
@@ -162,6 +163,7 @@ describe('Follow feature', () => {
                 getCurrentUserFollowers {
                     id
                     username
+                    profilePictureUrl
                 }
             }
         `;
@@ -171,6 +173,7 @@ describe('Follow feature', () => {
                 getUserFollowing(userId: $userId) {
                     id
                     username
+                    profilePictureUrl
                 }
             }
         `;
@@ -180,6 +183,7 @@ describe('Follow feature', () => {
                 getUserFollowers(userId: $userId) {
                     id
                     username
+                    profilePictureUrl
                 }
             }
         `;
@@ -207,10 +211,11 @@ describe('Follow feature', () => {
             // Update currentUser's followers
             currentUser.followers.push(targetUser.id);
             await currentUser.save();
-            const expectedPayload: { id: string; username: string }[] = [
+            const expectedPayload: Follower[] = [
                 {
                     id: targetUser.id,
                     username: targetUser.username,
+                    profilePictureUrl: targetUser.profilePictureUrl,
                 },
             ];
 
@@ -218,7 +223,6 @@ describe('Follow feature', () => {
             const res = await client.query({
                 query: GET_CURRENT_USER_FOLLOWERS,
             });
-            console.log('getCurrentUserFollowers:', res);
             const payload = res.data.getCurrentUserFollowers;
 
             expect(payload).toEqual(expectedPayload);
@@ -231,10 +235,11 @@ describe('Follow feature', () => {
             // Update targetUser's followers
             targetUser.followers.push(currentUser.id);
             await targetUser.save();
-            const expectedPayload: { id: string; username: string }[] = [
+            const expectedPayload: Follower[] = [
                 {
                     id: targetUser.id,
                     username: targetUser.username,
+                    profilePictureUrl: targetUser.profilePictureUrl,
                 },
             ];
 
@@ -242,17 +247,21 @@ describe('Follow feature', () => {
             const res = await client.query({
                 query: GET_CURRENT_USER_FOLLOWING,
             });
-            console.log('getCurrentUserFollowing:', res);
             const payload = res.data.getCurrentUserFollowing;
 
             expect(payload).toEqual(expectedPayload);
         });
 
         it("can get another user's list of following", async () => {
-            const expectedPayload = [
+            // Set follow privacy setting to public
+            targetUser.privacy.follow = true;
+            await targetUser.save();
+
+            const expectedPayload: Follower[] = [
                 {
                     id: currentUser.id,
                     username: currentUser.username,
+                    profilePictureUrl: currentUser.profilePictureUrl,
                 },
             ];
 
@@ -262,17 +271,17 @@ describe('Follow feature', () => {
                     userId: targetUser.id,
                 },
             });
-            console.log(res);
             const payload = res.data.getUserFollowing;
 
             expect(payload).toEqual(expectedPayload);
         });
 
         it("can get another user's list of followers", async () => {
-            const expectedPayload = [
+            const expectedPayload: Follower[] = [
                 {
                     id: currentUser.id,
                     username: currentUser.username,
+                    profilePictureUrl: currentUser.profilePictureUrl,
                 },
             ];
 
@@ -282,10 +291,40 @@ describe('Follow feature', () => {
                     userId: targetUser.id,
                 },
             });
-            console.log(res);
             const payload = res.data.getUserFollowers;
 
             expect(payload).toEqual(expectedPayload);
+        });
+
+        it("cannot get another user's list of followers if follow privacy setting is private", async () => {
+            targetUser.privacy.follow = false;
+            await targetUser.save();
+
+            const res = await client.query({
+                query: GET_USER_FOLLOWERS,
+                variables: {
+                    userId: targetUser.id,
+                },
+            });
+            console.log(res);
+
+            expect(res.data).toBeNull();
+            expect(res.errors).toBeDefined();
+            expect(res.errors[0].message).toEqual("User's follow setting is set to private.");
+        });
+
+        it("cannot get another user's list of following if follow privacy setting is private", async () => {
+            const res = await client.query({
+                query: GET_USER_FOLLOWING,
+                variables: {
+                    userId: targetUser.id,
+                },
+            });
+            console.log(res);
+
+            expect(res.data).toBeNull();
+            expect(res.errors).toBeDefined();
+            expect(res.errors[0].message).toEqual("User's follow setting is set to private.");
         });
     });
 });

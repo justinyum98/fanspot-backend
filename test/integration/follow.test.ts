@@ -3,12 +3,30 @@ import faker = require('faker');
 import { createTestClient, ApolloServerTestClient } from 'apollo-server-testing';
 import { gql, ApolloServer } from 'apollo-server-express';
 import { createTestServer } from '../../src/graphql';
-import { FollowPayload } from '../../src/graphql/types';
+import { FollowMutationPayload } from '../../src/graphql/types';
 import { connectDatabase, closeDatabase } from '../../src/database';
 import { UserDocument } from '../../src/database/models/UserModel';
 import { closeRedis } from '../../src/redis/actions';
 import { generateJWT } from '../../src/utils/jwt';
 import { createUser, findUserById } from '../../src/database/dataAccess/User';
+
+const FOLLOW_USER = gql`
+    mutation FollowUser($targetUserId: String!) {
+        follow(targetUserId: $targetUserId) {
+            currentUserFollowing
+            targetUserFollowers
+        }
+    }
+`;
+
+const UNFOLLOW_USER = gql`
+    mutation UnfollowUser($targetUserId: String!) {
+        unfollow(targetUserId: $targetUserId) {
+            currentUserFollowing
+            targetUserFollowers
+        }
+    }
+`;
 
 describe('Follow feature', () => {
     let connection: mongoose.Connection;
@@ -110,21 +128,9 @@ describe('Follow feature', () => {
         });
 
         it('can follow another user', async () => {
-            const expectedPayload: FollowPayload = {
-                currentUser: {
-                    id: currentUser.id,
-                    username: currentUser.username,
-                    email: currentUser.email,
-                    following: [{ id: targetUser.id }],
-                    followers: [],
-                },
-                targetUser: {
-                    id: targetUser.id,
-                    username: targetUser.username,
-                    email: targetUser.email,
-                    following: [],
-                    followers: [{ id: currentUser.id }],
-                },
+            const expectedPayload: FollowMutationPayload = {
+                currentUserFollowing: [targetUser.id],
+                targetUserFollowers: [currentUser.id],
             };
 
             const res = await client.mutate({
@@ -133,19 +139,10 @@ describe('Follow feature', () => {
                     targetUserId: targetUser.id,
                 },
             });
+            console.log(res);
             const payload = res.data.follow;
 
             expect(payload).toEqual(expectedPayload);
-
-            expect(payload.currentUser.id).toEqual(currentUser.id);
-            expect(payload.currentUser.following.length).toEqual(1);
-            expect(payload.currentUser.following[0].id).toEqual(payload.targetUser.id);
-            expect(payload.currentUser.followers.length).toEqual(0);
-
-            expect(payload.targetUser.id).toEqual(targetUser.id);
-            expect(payload.targetUser.following.length).toEqual(0);
-            expect(payload.targetUser.followers.length).toEqual(1);
-            expect(payload.targetUser.followers[0].id).toEqual(payload.currentUser.id);
         });
 
         it('cannot follow a user that you are already following', async () => {
@@ -170,21 +167,9 @@ describe('Follow feature', () => {
             expect(currentUser.following.length).toEqual(1);
             expect(targetUser.followers.length).toEqual(1);
 
-            const expectedPayload: FollowPayload = {
-                currentUser: {
-                    id: currentUser.id,
-                    username: currentUser.username,
-                    email: currentUser.email,
-                    following: [],
-                    followers: [],
-                },
-                targetUser: {
-                    id: targetUser.id,
-                    username: targetUser.username,
-                    email: targetUser.email,
-                    following: [],
-                    followers: [],
-                },
+            const expectedPayload: FollowMutationPayload = {
+                currentUserFollowing: [],
+                targetUserFollowers: [],
             };
 
             const res = await client.mutate({

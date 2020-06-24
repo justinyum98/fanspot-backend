@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import { AuthenticationError } from 'apollo-server-express';
-import { AuthPayload, FollowPayload } from '../types';
+import { AuthPayload, FollowMutationPayload } from '../types';
 import { UserDocument } from '../../database/models/UserModel';
 import {
     findUserById,
@@ -44,33 +44,35 @@ export const Mutation = {
             parent: any,
             args: { targetUserId: string },
             context: { token: string },
-        ): Promise<FollowPayload> => {
+        ): Promise<FollowMutationPayload> => {
             const decodedToken = await verifyJWT(context.token);
-            let currentUser: UserDocument = await findUserById((decodedToken as any).id);
-            let targetUser: UserDocument = await findUserById(args.targetUserId);
+            const currentUser: UserDocument = await findUserById(decodedToken.id);
+            const targetUser: UserDocument = await findUserById(args.targetUserId);
             const [currentUserDoc, targetUserDoc]: [UserDocument, UserDocument] = await followUser(
                 currentUser,
                 targetUser,
             );
-            currentUser = currentUserDoc;
-            targetUser = targetUserDoc;
-            return { currentUser: currentUser.toObject(), targetUser: targetUser.toObject() };
+            return {
+                currentUserFollowing: currentUserDoc.toObject().following,
+                targetUserFollowers: targetUserDoc.toObject().followers,
+            };
         },
         unfollow: async (
             parent: any,
             args: { targetUserId: string },
             context: { token: string },
-        ): Promise<FollowPayload> => {
+        ): Promise<FollowMutationPayload> => {
             const decodedToken = await verifyJWT(context.token);
-            let currentUser = await findUserById((decodedToken as any).id);
-            let targetUser = await findUserById(args.targetUserId);
+            const currentUser = await findUserById(decodedToken.id);
+            const targetUser = await findUserById(args.targetUserId);
             const [currentUserDoc, targetUserDoc]: [UserDocument, UserDocument] = await unfollowUser(
                 currentUser,
                 targetUser,
             );
-            currentUser = currentUserDoc;
-            targetUser = targetUserDoc;
-            return { currentUser: currentUser.toObject(), targetUser: targetUser.toObject() };
+            return {
+                currentUserFollowing: currentUserDoc.toObject().following,
+                targetUserFollowers: targetUserDoc.toObject().followers,
+            };
         },
     },
 };

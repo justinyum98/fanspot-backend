@@ -5,6 +5,11 @@ export type AuthPayload = {
     token: string;
 };
 
+export type Follower = {
+    id: string;
+    username: string;
+};
+
 export type FollowMutationPayload = {
     currentUserFollowing: string[];
     targetUserFollowers: string[];

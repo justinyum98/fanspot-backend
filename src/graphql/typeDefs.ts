@@ -21,20 +21,35 @@ export const typeDefs = gql`
         token: String!
     }
 
-    type FollowPayload {
+    type FollowMutationPayload {
         # "String!" being the user IDs.
         currentUserFollowing: [String!]!
         targetUserFollowers: [String!]!
     }
 
+    type Follower {
+        id: String!
+        username: String!
+    }
+
     type Query {
+        # Public
         sayHello: String!
+        getUserFollowers(userId: String!): [Follower!]!
+        getUserFollowing(userId: String!): [Follower!]!
+
+        # Private (requires token)
+        getCurrentUserFollowers: [Follower!]!
+        getCurrentUserFollowing: [Follower!]!
     }
 
     type Mutation {
+        # Public
         login(username: String!, password: String!): AuthPayload
         register(username: String!, password: String!, email: EmailAddress!): AuthPayload
-        follow(targetUserId: String!): FollowPayload
-        unfollow(targetUserId: String!): FollowPayload
+
+        # Private (requires token)
+        follow(targetUserId: String!): FollowMutationPayload
+        unfollow(targetUserId: String!): FollowMutationPayload
     }
 `;

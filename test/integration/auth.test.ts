@@ -1,3 +1,4 @@
+import faker from 'faker';
 import { createTestClient, ApolloServerTestClient } from 'apollo-server-testing';
 import { gql, ApolloServer } from 'apollo-server-express';
 import mongoose from 'mongoose';
@@ -17,6 +18,13 @@ const LOGIN_USER = gql`
                 username
                 password
                 email
+                profilePictureUrl
+                privacy {
+                    follow
+                }
+                isArtist
+                followers
+                following
             }
             token
         }
@@ -31,13 +39,13 @@ const REGISTER_USER = gql`
                 username
                 password
                 email
+                profilePictureUrl
+                privacy {
+                    follow
+                }
                 isArtist
-                followers {
-                    id
-                }
-                following {
-                    id
-                }
+                followers
+                following
             }
             token
         }
@@ -73,6 +81,7 @@ describe('Authentication feature', () => {
                 email: 'testuser1@email.com',
             };
 
+            // Create the user
             const res = await client.mutate({
                 mutation: REGISTER_USER,
                 variables: {
@@ -81,28 +90,32 @@ describe('Authentication feature', () => {
                     email: mockUser.email,
                 },
             });
-            const { user, token } = res.data.register;
-            let actualUser: UserDocument = await findUserById(user.id);
-            actualUser = await populateUser(actualUser);
-            const expectedData: AuthPayload = {
+            const payload: AuthPayload = res.data.register;
+
+            const actualUser: UserDocument = await findUserById(payload.user.id);
+            const expectedPayload: AuthPayload = {
                 user: {
                     id: actualUser.id,
                     username: mockUser.username,
                     password: mockUser.password,
                     email: mockUser.email,
+                    profilePictureUrl: null,
+                    privacy: {
+                        follow: false,
+                    },
                     isArtist: false,
                     followers: [],
                     following: [],
                 },
-                token,
+                token: payload.token,
             };
-            const decodedToken = await verifyJWT(token);
+            const decodedToken = await verifyJWT(payload.token);
             const cachedUser = await getCachedUser(actualUser.id);
 
             expect(actualUser).toBeDefined();
-            expect(expectedData).toEqual(res.data.register);
-            expect((decodedToken as any).id).toEqual(actualUser.id);
-            expect((decodedToken as any).username).toEqual(mockUser.username);
+            expect(payload).toEqual(expectedPayload);
+            expect(decodedToken.id).toEqual(actualUser.id);
+            expect(decodedToken.username).toEqual(actualUser.username);
             expect(cachedUser).toEqual(actualUser.toJSON());
         });
 
@@ -152,7 +165,7 @@ describe('Authentication feature', () => {
     });
 
     describe('Login', () => {
-        let mockUser: any;
+        let mockUser: { username: string; password: string; email: string };
         let userDocument: UserDocument;
 
         beforeAll(async () => {
@@ -163,7 +176,6 @@ describe('Authentication feature', () => {
                 email: 'testuser123@email.com',
             };
             userDocument = await createUser(mockUser.username, mockUser.password, mockUser.email);
-            userDocument = await populateUser(userDocument);
         });
 
         it('can login a user with a username and password', async () => {
@@ -174,22 +186,29 @@ describe('Authentication feature', () => {
                     password: mockUser.password,
                 },
             });
-            const { user, token } = res.data.login;
-            const expectedData = {
+            const payload = res.data.login;
+            const expectedPayload: AuthPayload = {
                 user: {
                     id: userDocument.id,
                     username: mockUser.username,
                     password: mockUser.password,
                     email: mockUser.email,
+                    profilePictureUrl: null,
+                    isArtist: false,
+                    privacy: {
+                        follow: false,
+                    },
+                    followers: [],
+                    following: [],
                 },
-                token,
+                token: payload.token,
             };
-            const decodedToken = await verifyJWT(token);
+            const decodedToken = await verifyJWT(payload.token);
             const cachedUser = await getCachedUser(userDocument.id);
 
-            expect(res.data.login).toEqual(expectedData);
-            expect((decodedToken as any).id).toEqual(user.id);
-            expect((decodedToken as any).username).toEqual(user.username);
+            expect(payload).toEqual(expectedPayload);
+            expect(decodedToken.id).toEqual(payload.user.id);
+            expect(decodedToken.username).toEqual(payload.user.username);
             expect(cachedUser).toEqual(userDocument.toJSON());
         });
 

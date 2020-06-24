@@ -16,19 +16,19 @@ export type UserObject = {
     password?: string;
     email?: string;
     isArtist?: boolean;
-    followers?: { id: string }[];
-    following?: { id: string }[];
+    followers?: string[];
+    following?: string[];
 };
 
 // UserDocument.toJSON() (for caching)
 export type UserJSON = {
-    id: string;
-    username: string;
-    password: string;
-    email: string;
-    isArtist: boolean;
-    followers: { id: string }[];
-    following: { id: string }[];
+    id?: string;
+    username?: string;
+    password?: string;
+    email?: string;
+    isArtist?: boolean;
+    followers?: string[];
+    following?: string[];
 };
 
 const UserSchema: mongoose.Schema = new mongoose.Schema({
@@ -57,19 +57,20 @@ const UserSchema: mongoose.Schema = new mongoose.Schema({
 UserSchema.set('toJSON', {
     versionKey: false,
     virtuals: true,
-    transform: (doc, ret) => {
+    transform: (doc: UserDocument, ret) => {
+        // IMPORTANT: MUST DEPOPULATE FIELDS BEFORE USING toObject.
         ret.id = ret._id.toString();
         delete ret._id;
-        ret.following.forEach((userId: mongoose.Types.ObjectId, index: number, following: Array<any>) => {
-            following[index] = {
-                id: userId.toString(),
-            };
-        });
-        ret.followers.forEach((userId: mongoose.Types.ObjectId, index: number, followers: Array<any>) => {
-            followers[index] = {
-                id: userId.toString(),
-            };
-        });
+        ret.following.forEach(
+            (userId: mongoose.Types.ObjectId, index: number, following: Array<mongoose.Types.ObjectId | string>) => {
+                following[index] = userId.toString();
+            },
+        );
+        ret.followers.forEach(
+            (userId: mongoose.Types.ObjectId, index: number, followers: Array<mongoose.Types.ObjectId | string>) => {
+                followers[index] = userId.toString();
+            },
+        );
     },
 });
 
@@ -77,18 +78,19 @@ UserSchema.set('toObject', {
     versionKey: false,
     virtuals: true,
     transform: (doc, ret) => {
+        // IMPORTANT: MUST DEPOPULATE FIELDS BEFORE USING toObject.
         ret.id = ret._id.toString();
         delete ret._id;
-        ret.following.forEach((userId: mongoose.Types.ObjectId, index: number, following: Array<any>) => {
-            following[index] = {
-                id: userId.toString(),
-            };
-        });
-        ret.followers.forEach((userId: mongoose.Types.ObjectId, index: number, followers: Array<any>) => {
-            followers[index] = {
-                id: userId.toString(),
-            };
-        });
+        ret.following.forEach(
+            (userId: mongoose.Types.ObjectId, index: number, following: Array<mongoose.Types.ObjectId | string>) => {
+                following[index] = userId.toString();
+            },
+        );
+        ret.followers.forEach(
+            (userId: mongoose.Types.ObjectId, index: number, followers: Array<mongoose.Types.ObjectId | string>) => {
+                followers[index] = userId.toString();
+            },
+        );
     },
 });
 

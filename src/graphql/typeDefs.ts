@@ -22,8 +22,9 @@ export const typeDefs = gql`
     }
 
     type FollowPayload {
-        currentUser: User!
-        targetUser: User!
+        # "String!" being the user IDs.
+        currentUserFollowing: [String!]!
+        targetUserFollowers: [String!]!
     }
 
     type Query {

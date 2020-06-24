@@ -10,19 +10,19 @@ export const Query = {
         sayHello: (): string => 'hello',
         getUserFollowers: async (parent: any, args: { userId: string }, context: any): Promise<Follower[]> => {
             let targetUser: UserDocument = await findUserById(args.userId);
-            targetUser = await targetUser.populate('followers', 'id username').execPopulate();
+            targetUser = await targetUser.populate('followers', 'id username profilePictureUrl').execPopulate();
             const followers: mongoose.Types.ObjectId[] | UserDocument[] = targetUser.followers.toObject();
             const followersPayload: Follower[] = (followers as UserDocument[]).map((user: UserDocument) => {
-                return { id: user.id, username: user.username };
+                return { id: user.id, username: user.username, profilePictureUrl: user.profilePictureUrl };
             });
             return followersPayload;
         },
         getUserFollowing: async (parent: any, args: { userId: string }, context: any): Promise<Follower[]> => {
             let targetUser: UserDocument = await findUserById(args.userId);
-            targetUser = await targetUser.populate('following', 'id username').execPopulate();
+            targetUser = await targetUser.populate('following', 'id username profilePictureUrl').execPopulate();
             const following: mongoose.Types.ObjectId[] | UserDocument[] = targetUser.following.toObject();
             const followingPayload: Follower[] = (following as UserDocument[]).map((user: UserDocument) => {
-                return { id: user.id, username: user.username };
+                return { id: user.id, username: user.username, profilePictureUrl: user.profilePictureUrl };
             });
             return followingPayload;
         },
@@ -30,22 +30,20 @@ export const Query = {
         getCurrentUserFollowers: async (parent: any, args: any, context: { token: string }): Promise<Follower[]> => {
             const decodedToken = await verifyJWT(context.token);
             let currentUser: UserDocument = await findUserById(decodedToken.id);
-            currentUser = await currentUser.populate('followers', 'id username').execPopulate();
+            currentUser = await currentUser.populate('followers', 'id username profilePictureUrl').execPopulate();
             const followers: mongoose.Types.ObjectId[] | UserDocument[] = currentUser.followers.toObject();
-            const followersPayload: { id: string; username: string }[] = (followers as UserDocument[]).map(
-                (user: UserDocument) => {
-                    return { id: user.id, username: user.username };
-                },
-            );
+            const followersPayload: Follower[] = (followers as UserDocument[]).map((user: UserDocument) => {
+                return { id: user.id, username: user.username, profilePictureUrl: user.profilePictureUrl };
+            });
             return followersPayload;
         },
         getCurrentUserFollowing: async (parent: any, args: any, context: { token: string }): Promise<Follower[]> => {
             const decodedToken = await verifyJWT(context.token);
             let currentUser: UserDocument = await findUserById(decodedToken.id);
-            currentUser = await currentUser.populate('following', 'id username').execPopulate();
+            currentUser = await currentUser.populate('following', 'id username profilePictureUrl').execPopulate();
             const following: mongoose.Types.ObjectId[] | UserDocument[] = currentUser.following.toObject();
             const followingPayload: Follower[] = (following as UserDocument[]).map((user: UserDocument) => {
-                return { id: user.id, username: user.username };
+                return { id: user.id, username: user.username, profilePictureUrl: user.profilePictureUrl };
             });
             return followingPayload;
         },

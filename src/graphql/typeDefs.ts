@@ -36,6 +36,7 @@ export const typeDefs = gql`
     type Follower {
         id: String!
         username: String!
+        profilePictureUrl: URL
     }
 
     type Query {

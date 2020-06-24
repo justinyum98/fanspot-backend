@@ -8,6 +8,7 @@ export type AuthPayload = {
 export type Follower = {
     id: string;
     username: string;
+    profilePictureUrl: string;
 };
 
 export type FollowMutationPayload = {

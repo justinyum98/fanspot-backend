@@ -14,11 +14,12 @@ export function generateJWT(id: string, username: string): string {
     );
 }
 
-export async function verifyJWT(token: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-        verify(token, process.env.JWT_SECRET, (err, decoded) => {
-            if (err) return reject(err);
-            resolve(decoded);
-        });
-    });
+export function verifyJWT(token: string): any {
+    let decoded;
+    try {
+        decoded = verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+        throw error;
+    }
+    return decoded;
 }

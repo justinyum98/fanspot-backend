@@ -221,9 +221,11 @@ describe('Authentication feature', () => {
                 },
             });
 
+            console.log('login error', res);
+
             expect(res.data.login).toBeNull();
             expect(res.errors).toBeDefined();
-            expect(res.errors[0].message).toEqual('User with username does not exist.');
+            expect(res.errors[0].message).toEqual('User with username could not be found.');
         });
 
         it('cannot login with the wrong password', async () => {
@@ -237,7 +239,7 @@ describe('Authentication feature', () => {
 
             expect(res.data.login).toBeNull();
             expect(res.errors).toBeDefined();
-            expect(res.errors[0].message).toEqual('Username and/or password is incorrect.');
+            expect(res.errors[0].message).toEqual('Password is incorrect.');
         });
     });
 });

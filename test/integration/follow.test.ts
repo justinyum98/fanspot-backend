@@ -306,7 +306,6 @@ describe('Follow feature', () => {
                     userId: targetUser.id,
                 },
             });
-            console.log(res);
 
             expect(res.data).toBeNull();
             expect(res.errors).toBeDefined();
@@ -320,7 +319,6 @@ describe('Follow feature', () => {
                     userId: targetUser.id,
                 },
             });
-            console.log(res);
 
             expect(res.data).toBeNull();
             expect(res.errors).toBeDefined();

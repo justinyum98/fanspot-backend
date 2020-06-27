@@ -11,6 +11,7 @@ import {
     unfollowUser,
 } from '../../database/dataAccess/User';
 import { generateJWT, verifyJWT } from '../../utils/jwt';
+import { validatePasswordMatch } from '../../utils/password';
 import { cacheUser } from '../../redis/actions';
 import NotFoundError from '../../errors/NotFoundError';
 
@@ -19,7 +20,8 @@ export const Mutation = {
         login: async (parent: any, args: { username: string; password: string }): Promise<AuthPayload> => {
             const user: UserDocument = await findUserByUsername(args.username);
             if (!user) throw new NotFoundError('User with username');
-            if (args.password !== user.password) throw new AuthenticationError('Password is incorrect.');
+            const passwordsMatch = await validatePasswordMatch(args.password, user.password);
+            if (!passwordsMatch) throw new AuthenticationError('Password is incorrect.');
             await cacheUser(user);
             const token: string = generateJWT(user.id, user.username);
             return { user: user.toObject(), token };

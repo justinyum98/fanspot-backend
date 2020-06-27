@@ -1,4 +1,3 @@
-import faker from 'faker';
 import { createTestClient, ApolloServerTestClient } from 'apollo-server-testing';
 import { gql, ApolloServer } from 'apollo-server-express';
 import mongoose from 'mongoose';
@@ -6,7 +5,8 @@ import { createTestServer } from '../../src/graphql';
 import { connectDatabase, closeDatabase } from '../../src/database';
 import { getCachedUser, closeRedis } from '../../src/redis/actions';
 import { verifyJWT } from '../../src/utils/jwt';
-import { findUserById, populateUser, createUser } from '../../src/database/dataAccess/User';
+import { validatePasswordMatch } from '../../src/utils/password';
+import { findUserById, createUser } from '../../src/database/dataAccess/User';
 import { UserDocument } from '../../src/database/models/UserModel';
 import { AuthPayload } from '../../src/graphql/types';
 
@@ -16,7 +16,6 @@ const LOGIN_USER = gql`
             user {
                 id
                 username
-                password
                 email
                 profilePictureUrl
                 privacy {
@@ -37,7 +36,6 @@ const REGISTER_USER = gql`
             user {
                 id
                 username
-                password
                 email
                 profilePictureUrl
                 privacy {
@@ -97,7 +95,6 @@ describe('Authentication feature', () => {
                 user: {
                     id: actualUser.id,
                     username: mockUser.username,
-                    password: mockUser.password,
                     email: mockUser.email,
                     profilePictureUrl: null,
                     privacy: {
@@ -109,11 +106,13 @@ describe('Authentication feature', () => {
                 },
                 token: payload.token,
             };
+            const passwordsMatch = await validatePasswordMatch(mockUser.password, actualUser.password);
             const decodedToken = await verifyJWT(payload.token);
             const cachedUser = await getCachedUser(actualUser.id);
 
             expect(actualUser).toBeDefined();
             expect(payload).toEqual(expectedPayload);
+            expect(passwordsMatch).toEqual(true);
             expect(decodedToken.id).toEqual(actualUser.id);
             expect(decodedToken.username).toEqual(actualUser.username);
             expect(cachedUser).toEqual(actualUser.toJSON());
@@ -191,7 +190,6 @@ describe('Authentication feature', () => {
                 user: {
                     id: userDocument.id,
                     username: mockUser.username,
-                    password: mockUser.password,
                     email: mockUser.email,
                     profilePictureUrl: null,
                     isArtist: false,
@@ -203,10 +201,12 @@ describe('Authentication feature', () => {
                 },
                 token: payload.token,
             };
+            const passwordsMatch = await validatePasswordMatch(mockUser.password, userDocument.password);
             const decodedToken = await verifyJWT(payload.token);
             const cachedUser = await getCachedUser(userDocument.id);
 
             expect(payload).toEqual(expectedPayload);
+            expect(passwordsMatch).toEqual(true);
             expect(decodedToken.id).toEqual(payload.user.id);
             expect(decodedToken.username).toEqual(payload.user.username);
             expect(cachedUser).toEqual(userDocument.toJSON());
@@ -220,8 +220,6 @@ describe('Authentication feature', () => {
                     password: mockUser.password,
                 },
             });
-
-            console.log('login error', res);
 
             expect(res.data.login).toBeNull();
             expect(res.errors).toBeDefined();

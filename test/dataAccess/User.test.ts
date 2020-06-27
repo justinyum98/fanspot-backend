@@ -3,6 +3,7 @@ import faker = require('faker');
 import { connectDatabase, closeDatabase } from '../../src/database';
 import { UserDocument } from '../../src/database/models/UserModel';
 import { findUserById, createUser, followUser, unfollowUser } from '../../src/database/dataAccess/User';
+import { validatePasswordMatch } from '../../src/utils/password';
 
 describe('User data access methods', () => {
     let connection: mongoose.Connection;
@@ -27,11 +28,12 @@ describe('User data access methods', () => {
         };
 
         currentUser = await createUser(requiredData.username, requiredData.password, requiredData.email);
+        const passwordsMatch = await validatePasswordMatch(requiredData.password, currentUser.password);
         const userObject = currentUser.toObject();
 
         expect(userObject.id).toBeDefined();
         expect(userObject.username).toEqual(requiredData.username);
-        expect(userObject.password).toEqual(requiredData.password);
+        expect(passwordsMatch).toEqual(true);
         expect(userObject.email).toEqual(requiredData.email);
         expect(userObject.isArtist).toEqual(false);
         expect(userObject.followers).toEqual([]);

@@ -1,5 +1,6 @@
 import mongoose = require('mongoose');
 import { UserModel, UserDocument } from '../models/UserModel';
+import { generatePasswordHash } from '../../utils/password';
 import logger from '../../utils/logger';
 import FollowError from '../../errors/FollowError';
 
@@ -32,10 +33,11 @@ export async function findUserByEmail(email: string): Promise<UserDocument> {
 
 export async function createUser(username: string, password: string, email: string): Promise<UserDocument> {
     let newUser: UserDocument;
+    const passwordHash = await generatePasswordHash(password);
     try {
         newUser = new UserModel({
             username,
-            password,
+            password: passwordHash,
             email,
             profilePictureUrl: null,
             privacy: {

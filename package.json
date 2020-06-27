@@ -22,9 +22,11 @@
         "watch-ts": "tsc -w"
     },
     "dependencies": {
+        "@types/bcrypt": "^3.0.0",
         "apollo-server-cache-redis": "^1.2.1",
         "apollo-server-express": "^2.14.2",
         "apollo-server-testing": "^2.14.2",
+        "bcrypt": "^5.0.0",
         "bluebird": "^3.7.2",
         "dotenv": "^8.2.0",
         "ejs": "^2.5.6",

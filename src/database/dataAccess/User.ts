@@ -39,13 +39,6 @@ export async function createUser(username: string, password: string, email: stri
             username,
             password: passwordHash,
             email,
-            profilePictureUrl: null,
-            privacy: {
-                follow: false,
-            },
-            isArtist: false,
-            followers: [],
-            following: [],
         });
         await newUser.save();
     } catch (error) {

@@ -30,7 +30,7 @@ describe('Follow feature', () => {
         let targetUser: UserDocument;
 
         const FOLLOW_USER = gql`
-            mutation FollowUser($targetUserId: String!) {
+            mutation FollowUser($targetUserId: ID!) {
                 follow(targetUserId: $targetUserId) {
                     currentUserFollowing
                     targetUserFollowers
@@ -39,7 +39,7 @@ describe('Follow feature', () => {
         `;
 
         const UNFOLLOW_USER = gql`
-            mutation UnfollowUser($targetUserId: String!) {
+            mutation UnfollowUser($targetUserId: ID!) {
                 unfollow(targetUserId: $targetUserId) {
                     currentUserFollowing
                     targetUserFollowers
@@ -169,7 +169,7 @@ describe('Follow feature', () => {
         `;
 
         const GET_USER_FOLLOWING = gql`
-            query GetUserFollowing($userId: String!) {
+            query GetUserFollowing($userId: ID!) {
                 getUserFollowing(userId: $userId) {
                     id
                     username
@@ -179,7 +179,7 @@ describe('Follow feature', () => {
         `;
 
         const GET_USER_FOLLOWERS = gql`
-            query GetUserFollowers($userId: String!) {
+            query GetUserFollowers($userId: ID!) {
                 getUserFollowers(userId: $userId) {
                     id
                     username

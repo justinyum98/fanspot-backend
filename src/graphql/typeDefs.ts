@@ -1,17 +1,17 @@
 import { gql } from 'apollo-server-express';
 
 export const typeDefs = gql`
+    ### USER ###
     type User {
-        id: String!
+        id: ID!
         username: String!
         password: String!
         email: EmailAddress!
         isArtist: Boolean!
         profilePictureUrl: URL
         privacy: Privacy!
-        followers: [String!]! # String! being the id
-        following: [String!]! # String! being the id
-        # tokens: ThirdParty!
+        followers: [ID!]! # ids of Users
+        following: [ID!]! # ids of Users
         # posts: [Post!]!
         # comments: [Comment!]!
         # activities: [Activity!]!
@@ -22,6 +22,46 @@ export const typeDefs = gql`
         follow: Boolean!
     }
 
+    ### POST ###
+    # interface Post {
+    #     id: ID!
+    #     poster: ID! # id of User
+    #     title: String!
+    #     likes: Int!
+    #     dislikes: Int!
+    #     likers: [ID!]! # ids of Users
+    #     dislikers: [ID!]! #ids of Users
+    # }
+
+    ### QUERY ###
+    type Query {
+        # Public
+        sayHello: String!
+        getUserFollowers(userId: ID!): [Follower!]!
+        getUserFollowing(userId: ID!): [Follower!]!
+
+        # Private (requires token)
+        getCurrentUserFollowers: [Follower!]!
+        getCurrentUserFollowing: [Follower!]!
+    }
+
+    type Follower {
+        id: ID!
+        username: String!
+        profilePictureUrl: URL
+    }
+
+    ### MUTATION ###
+    type Mutation {
+        # Public
+        login(username: String!, password: String!): AuthPayload
+        register(username: String!, password: String!, email: EmailAddress!): AuthPayload
+
+        # Private (requires token)
+        follow(targetUserId: ID!): FollowMutationPayload
+        unfollow(targetUserId: ID!): FollowMutationPayload
+    }
+
     type AuthPayload {
         user: User!
         token: String!
@@ -29,34 +69,7 @@ export const typeDefs = gql`
 
     type FollowMutationPayload {
         # "String!" being the user IDs.
-        currentUserFollowing: [String!]!
-        targetUserFollowers: [String!]!
-    }
-
-    type Follower {
-        id: String!
-        username: String!
-        profilePictureUrl: URL
-    }
-
-    type Query {
-        # Public
-        sayHello: String!
-        getUserFollowers(userId: String!): [Follower!]!
-        getUserFollowing(userId: String!): [Follower!]!
-
-        # Private (requires token)
-        getCurrentUserFollowers: [Follower!]!
-        getCurrentUserFollowing: [Follower!]!
-    }
-
-    type Mutation {
-        # Public
-        login(username: String!, password: String!): AuthPayload
-        register(username: String!, password: String!, email: EmailAddress!): AuthPayload
-
-        # Private (requires token)
-        follow(targetUserId: String!): FollowMutationPayload
-        unfollow(targetUserId: String!): FollowMutationPayload
+        currentUserFollowing: [ID!]!
+        targetUserFollowers: [ID!]!
     }
 `;

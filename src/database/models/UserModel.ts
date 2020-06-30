@@ -58,18 +58,18 @@ const UserSchema: mongoose.Schema = new mongoose.Schema({
     },
     profilePictureUrl: {
         type: String,
-        required: false,
+        default: null,
     },
     privacy: {
         // If true, the user's following and followers lists are public.
         follow: {
             type: Boolean,
-            required: true,
+            default: false,
         },
     },
     isArtist: {
         type: Boolean,
-        required: true,
+        default: false,
     },
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],

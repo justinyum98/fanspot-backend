@@ -25,23 +25,24 @@ export const typeDefs = gql`
     }
 
     ### POST ###
-    # type Post {
-    #     id: ID!
-    #     poster: ID! # id of User
-    #     title: String!
-    #     likes: Int!
-    #     dislikes: Int!
-    #     likers: [ID!]! # ids of Users
-    #     dislikers: [ID!]! #ids of Users
-    #     postType: PostType!
-    #     text: String
-    #     mediaUrl: URL
-    # }
+    type Post {
+        id: ID!
+        poster: ID! # id of User
+        title: String!
+        likes: Int!
+        dislikes: Int!
+        likers: [ID!]! # ids of Users
+        dislikers: [ID!]! #ids of Users
+        postType: PostType!
+        content: String! # Either plaintext of Markdown OR media url
+        createdAt: DateTime!
+        updatedAt: DateTime!
+    }
 
-    # enum PostType {
-    #     TEXT
-    #     MEDIA
-    # }
+    enum PostType {
+        TEXT
+        MEDIA
+    }
 
     ### QUERY ###
     type Query {

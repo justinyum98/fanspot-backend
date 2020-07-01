@@ -30,22 +30,20 @@ describe('User data access methods', () => {
         currentUser = await createUser(requiredData.username, requiredData.password, requiredData.email);
         const passwordsMatch = await validatePasswordMatch(requiredData.password, currentUser.password);
         const userObject: UserObject = currentUser.toObject();
-        const expectedObject: UserObject = {
-            id: userObject.id,
-            username: requiredData.username,
-            password: userObject.password,
-            email: requiredData.email,
-            profilePictureUrl: null,
-            privacy: {
-                follow: false,
-            },
-            isArtist: false,
-            followers: [],
-            following: [],
-        };
 
-        expect(userObject).toEqual(expectedObject);
+        expect(userObject.id).toBeDefined();
+        expect(userObject.username).toEqual(requiredData.username);
         expect(passwordsMatch).toEqual(true);
+        expect(userObject.email).toEqual(requiredData.email);
+        expect(userObject.profilePictureUrl).toBeNull();
+        expect(userObject.privacy).toEqual({
+            follow: false,
+        });
+        expect(userObject.isArtist).toEqual(false);
+        expect(userObject.followers).toEqual([]);
+        expect(userObject.following).toEqual([]);
+        expect(userObject.createdAt).toBeDefined();
+        expect(userObject.updatedAt).toBeDefined();
     });
 
     it('can follow a user and update both users', async () => {

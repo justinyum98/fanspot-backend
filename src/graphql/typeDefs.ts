@@ -15,6 +15,8 @@ export const typeDefs = gql`
         # posts: [Post!]!
         # comments: [Comment!]!
         # activities: [Activity!]!
+        createdAt: DateTime!
+        updatedAt: DateTime!
     }
 
     type Privacy {
@@ -23,7 +25,7 @@ export const typeDefs = gql`
     }
 
     ### POST ###
-    # interface Post {
+    # type Post {
     #     id: ID!
     #     poster: ID! # id of User
     #     title: String!
@@ -31,6 +33,14 @@ export const typeDefs = gql`
     #     dislikes: Int!
     #     likers: [ID!]! # ids of Users
     #     dislikers: [ID!]! #ids of Users
+    #     postType: PostType!
+    #     text: String
+    #     mediaUrl: URL
+    # }
+
+    # enum PostType {
+    #     TEXT
+    #     MEDIA
     # }
 
     ### QUERY ###
@@ -61,6 +71,12 @@ export const typeDefs = gql`
         follow(targetUserId: ID!): FollowMutationPayload
         unfollow(targetUserId: ID!): FollowMutationPayload
     }
+
+    # interface MutationResponse {
+    #     code: String!
+    #     success: Boolean!
+    #     message: String!
+    # }
 
     type AuthPayload {
         user: User!

@@ -24,6 +24,8 @@ const LOGIN_USER = gql`
                 isArtist
                 followers
                 following
+                createdAt
+                updatedAt
             }
             token
         }
@@ -44,6 +46,8 @@ const REGISTER_USER = gql`
                 isArtist
                 followers
                 following
+                createdAt
+                updatedAt
             }
             token
         }
@@ -111,8 +115,10 @@ describe('Authentication feature', () => {
             const cachedUser = await getCachedUser(actualUser.id);
 
             expect(actualUser).toBeDefined();
-            expect(payload).toEqual(expectedPayload);
+            expect(payload).toMatchObject(expectedPayload);
             expect(passwordsMatch).toEqual(true);
+            expect(payload.user.createdAt).toBeDefined();
+            expect(payload.user.updatedAt).toBeDefined();
             expect(decodedToken.id).toEqual(actualUser.id);
             expect(decodedToken.username).toEqual(actualUser.username);
             expect(cachedUser).toEqual(actualUser.toJSON());
@@ -205,8 +211,10 @@ describe('Authentication feature', () => {
             const decodedToken = await verifyJWT(payload.token);
             const cachedUser = await getCachedUser(userDocument.id);
 
-            expect(payload).toEqual(expectedPayload);
+            expect(payload).toMatchObject(expectedPayload);
             expect(passwordsMatch).toEqual(true);
+            expect(payload.user.createdAt).toBeDefined();
+            expect(payload.user.updatedAt).toBeDefined();
             expect(decodedToken.id).toEqual(payload.user.id);
             expect(decodedToken.username).toEqual(payload.user.username);
             expect(cachedUser).toEqual(userDocument.toJSON());

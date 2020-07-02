@@ -24,6 +24,7 @@ const LOGIN_USER = gql`
                 isArtist
                 followers
                 following
+                posts
                 createdAt
                 updatedAt
             }
@@ -46,6 +47,7 @@ const REGISTER_USER = gql`
                 isArtist
                 followers
                 following
+                posts
                 createdAt
                 updatedAt
             }
@@ -107,6 +109,7 @@ describe('Authentication feature', () => {
                     isArtist: false,
                     followers: [],
                     following: [],
+                    posts: [],
                 },
                 token: payload.token,
             };
@@ -204,6 +207,7 @@ describe('Authentication feature', () => {
                     },
                     followers: [],
                     following: [],
+                    posts: [],
                 },
                 token: payload.token,
             };

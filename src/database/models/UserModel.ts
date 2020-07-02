@@ -1,4 +1,5 @@
 import mongoose = require('mongoose');
+import { PostDocument } from './PostModel';
 
 export type Privacy = {
     follow: boolean;
@@ -13,38 +14,9 @@ export type UserDocument = mongoose.Document & {
     isArtist: boolean;
     followers: mongoose.Types.Array<mongoose.Types.ObjectId> | mongoose.Types.DocumentArray<UserDocument>;
     following: mongoose.Types.Array<mongoose.Types.ObjectId> | mongoose.Types.DocumentArray<UserDocument>;
+    posts: mongoose.Types.Array<mongoose.Types.ObjectId> | mongoose.Types.DocumentArray<PostDocument>;
     createdAt: Date;
     updatedAt: Date;
-};
-
-// UserDocument.toObject() (for resolvers)
-export type UserObject = {
-    id?: string;
-    username?: string;
-    password?: string;
-    email?: string;
-    profilePictureUrl?: string;
-    privacy?: Privacy;
-    isArtist?: boolean;
-    followers?: string[];
-    following?: string[];
-    createdAt?: Date;
-    updatedAt?: Date;
-};
-
-// UserDocument.toJSON() (for caching)
-export type UserJSON = {
-    id?: string;
-    username?: string;
-    password?: string;
-    email?: string;
-    profilePictureUrl?: string;
-    privacy?: Privacy;
-    isArtist?: boolean;
-    followers?: string[];
-    following?: string[];
-    createdAt?: string;
-    updatedAt?: string;
 };
 
 const UserSchema: mongoose.Schema = new mongoose.Schema(
@@ -80,9 +52,25 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
         },
         followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
         following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+        posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
     },
     { timestamps: true },
 );
+
+export type UserJSON = {
+    id?: string;
+    username?: string;
+    password?: string;
+    email?: string;
+    profilePictureUrl?: string;
+    privacy?: Privacy;
+    isArtist?: boolean;
+    followers?: string[];
+    following?: string[];
+    posts?: string[];
+    createdAt?: string;
+    updatedAt?: string;
+};
 
 UserSchema.set('toJSON', {
     versionKey: false,
@@ -101,11 +89,31 @@ UserSchema.set('toJSON', {
                 followers[index] = userId.toString();
             },
         );
+        ret.posts.forEach(
+            (postId: mongoose.Types.ObjectId, index: number, posts: Array<mongoose.Types.ObjectId | string>) => {
+                posts[index] = postId.toString();
+            },
+        );
         // Timestamp
         ret.createdAt = ret.createdAt.toISOString();
         ret.updatedAt = ret.updatedAt.toISOString();
     },
 });
+
+export type UserObject = {
+    id?: string;
+    username?: string;
+    password?: string;
+    email?: string;
+    profilePictureUrl?: string;
+    privacy?: Privacy;
+    isArtist?: boolean;
+    followers?: string[];
+    following?: string[];
+    posts?: string[];
+    createdAt?: Date;
+    updatedAt?: Date;
+};
 
 UserSchema.set('toObject', {
     versionKey: false,
@@ -122,6 +130,11 @@ UserSchema.set('toObject', {
         ret.followers.forEach(
             (userId: mongoose.Types.ObjectId, index: number, followers: Array<mongoose.Types.ObjectId | string>) => {
                 followers[index] = userId.toString();
+            },
+        );
+        ret.posts.forEach(
+            (postId: mongoose.Types.ObjectId, index: number, posts: Array<mongoose.Types.ObjectId | string>) => {
+                posts[index] = postId.toString();
             },
         );
     },

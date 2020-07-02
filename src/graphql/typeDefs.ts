@@ -12,7 +12,7 @@ export const typeDefs = gql`
         privacy: Privacy!
         followers: [ID!]! # ids of Users
         following: [ID!]! # ids of Users
-        # posts: [Post!]!
+        posts: [ID!]! # ids of Posts
         # comments: [Comment!]!
         # activities: [Activity!]!
         createdAt: DateTime!

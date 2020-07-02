@@ -42,6 +42,7 @@ describe('User data access methods', () => {
         expect(userObject.isArtist).toEqual(false);
         expect(userObject.followers).toEqual([]);
         expect(userObject.following).toEqual([]);
+        expect(userObject.posts).toEqual([]);
         expect(userObject.createdAt).toBeDefined();
         expect(userObject.updatedAt).toBeDefined();
     });

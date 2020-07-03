@@ -49,6 +49,19 @@ const PostSchema: mongoose.Schema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        // TODO: See https://trello.com/c/3L5XNXnR
+        // artist: {
+        //     type: mongoose.Schema.Types.ObjectId,
+        //     ref: 'Artist',
+        // },
+        // album: {
+        //     type: mongoose.Schema.Types.ObjectId,
+        //     ref: 'Album',
+        // },
+        // song: {
+        //     type: mongoose.Schema.Types.ObjectId,
+        //     ref: 'Song',
+        // },
         contentType: {
             type: String,
             required: true,

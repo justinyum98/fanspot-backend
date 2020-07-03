@@ -15,6 +15,7 @@ export async function createPost(
     poster: string,
     title: string,
     postType: string,
+    contentType: string,
     content: string,
 ): Promise<PostDocument> {
     let newPost: PostDocument;
@@ -23,6 +24,7 @@ export async function createPost(
             poster,
             title,
             postType,
+            contentType,
             content,
         });
         await newPost.save();

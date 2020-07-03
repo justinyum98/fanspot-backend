@@ -34,12 +34,19 @@ export const typeDefs = gql`
         likers: [ID!]! # ids of Users
         dislikers: [ID!]! #ids of Users
         postType: PostType!
+        contentType: ContentType!
         content: String! # Either plaintext of Markdown OR media url
         createdAt: DateTime!
         updatedAt: DateTime!
     }
 
     enum PostType {
+        ARTIST
+        ALBUM
+        SONG
+    }
+
+    enum ContentType {
         TEXT
         MEDIA
     }

@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
 
 export enum PostType {
+    Artist = 'ARTIST',
+    Album = 'ALBUM',
+    Song = 'SONG',
+}
+
+export enum ContentType {
     Text = 'TEXT',
     Media = 'MEDIA',
 }
@@ -13,6 +19,7 @@ export type PostDocument = mongoose.Document & {
     likers: string[];
     dislikers: string[];
     postType: PostType;
+    contentType: ContentType;
     content: string;
     createdAt: Date;
     updatedAt: Date;
@@ -42,6 +49,10 @@ const PostSchema: mongoose.Schema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        contentType: {
+            type: String,
+            required: true,
+        },
         content: {
             type: String,
             required: true,
@@ -59,6 +70,7 @@ export type PostObject = {
     likers?: string[];
     dislikers?: string[];
     postType?: PostType;
+    contentType?: ContentType;
     content?: string;
     createdAt?: Date;
     updatedAt?: Date;
@@ -93,6 +105,7 @@ export type PostJSON = {
     likers?: string[];
     dislikers?: string[];
     postType?: PostType;
+    contentType?: ContentType;
     content?: string;
     createdAt?: string;
     updatedAt?: string;

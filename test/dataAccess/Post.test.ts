@@ -27,7 +27,8 @@ describe('Post data access methods', () => {
         const requiredPostData = {
             poster: userDoc.id,
             title: faker.lorem.words(6),
-            postType: 'TEXT',
+            postType: 'ARTIST',
+            contentType: 'TEXT',
             content: faker.lorem.paragraphs(2),
         };
 
@@ -36,6 +37,7 @@ describe('Post data access methods', () => {
             requiredPostData.poster,
             requiredPostData.title,
             requiredPostData.postType,
+            requiredPostData.contentType,
             requiredPostData.content,
         );
         const postObject: PostObject = textPost.toObject();
@@ -48,6 +50,7 @@ describe('Post data access methods', () => {
         expect(postObject.likers).toEqual([]);
         expect(postObject.dislikers).toEqual([]);
         expect(postObject.postType).toEqual(requiredPostData.postType);
+        expect(postObject.contentType).toEqual(requiredPostData.contentType);
         expect(postObject.content).toEqual(requiredPostData.content);
         expect(postObject.createdAt).toBeDefined();
         expect(postObject.updatedAt).toBeDefined();
@@ -58,6 +61,7 @@ describe('Post data access methods', () => {
             poster: userDoc.id,
             title: faker.lorem.words(6),
             postType: 'MEDIA',
+            contentType: 'ARTIST',
             content: faker.image.imageUrl(),
         };
 
@@ -66,6 +70,7 @@ describe('Post data access methods', () => {
             requiredPostData.poster,
             requiredPostData.title,
             requiredPostData.postType,
+            requiredPostData.contentType,
             requiredPostData.content,
         );
         const postObject: PostObject = mediaPost.toObject();
@@ -78,6 +83,7 @@ describe('Post data access methods', () => {
         expect(postObject.likers).toEqual([]);
         expect(postObject.dislikers).toEqual([]);
         expect(postObject.postType).toEqual(requiredPostData.postType);
+        expect(postObject.contentType).toEqual(requiredPostData.contentType);
         expect(postObject.content).toEqual(requiredPostData.content);
         expect(postObject.createdAt).toBeDefined();
         expect(postObject.updatedAt).toBeDefined();

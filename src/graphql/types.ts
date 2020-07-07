@@ -1,9 +1,5 @@
 import { UserObject } from '../database/models/UserModel';
-
-export type AuthPayload = {
-    user: UserObject;
-    token: string;
-};
+import { PostObject } from '../database/models/PostModel';
 
 export type Follower = {
     id: string;
@@ -11,7 +7,23 @@ export type Follower = {
     profilePictureUrl: string;
 };
 
+// Mutation
+export interface MutationResponse {
+    code: string;
+    success: boolean;
+    message: string;
+}
+
+export type AuthPayload = {
+    user: UserObject;
+    token: string;
+};
+
 export type FollowMutationPayload = {
     currentUserFollowing: string[];
     targetUserFollowers: string[];
 };
+
+export interface CreatePostMutationResponse extends MutationResponse {
+    post: PostObject;
+}

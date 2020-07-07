@@ -79,13 +79,19 @@ export const typeDefs = gql`
         # Private (requires token)
         follow(targetUserId: ID!): FollowMutationPayload
         unfollow(targetUserId: ID!): FollowMutationPayload
+        createPost(
+            title: String!
+            postType: PostType!
+            contentType: ContentType!
+            content: String!
+        ): CreatePostMutationResponse
     }
 
-    # interface MutationResponse {
-    #     code: String!
-    #     success: Boolean!
-    #     message: String!
-    # }
+    interface MutationResponse {
+        code: String!
+        success: Boolean!
+        message: String!
+    }
 
     type AuthPayload {
         user: User!
@@ -96,5 +102,12 @@ export const typeDefs = gql`
         # "String!" being the user IDs.
         currentUserFollowing: [ID!]!
         targetUserFollowers: [ID!]!
+    }
+
+    type CreatePostMutationResponse implements MutationResponse {
+        code: String!
+        success: Boolean!
+        message: String!
+        post: Post
     }
 `;

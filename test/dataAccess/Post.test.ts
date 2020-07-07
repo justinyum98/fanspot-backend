@@ -66,8 +66,8 @@ describe('Post data access methods', () => {
         const requiredPostData = {
             poster: userDoc.id,
             title: faker.lorem.words(6),
-            postType: 'MEDIA',
-            contentType: 'ARTIST',
+            postType: 'ALBUM',
+            contentType: 'MEDIA',
             content: faker.image.imageUrl(),
         };
 

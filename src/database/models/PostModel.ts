@@ -48,6 +48,7 @@ const PostSchema: mongoose.Schema = new mongoose.Schema(
         postType: {
             type: String,
             required: true,
+            enum: ['ARTIST', 'ALBUM', 'SONG'],
         },
         // TODO: See https://trello.com/c/3L5XNXnR
         // artist: {
@@ -65,6 +66,7 @@ const PostSchema: mongoose.Schema = new mongoose.Schema(
         contentType: {
             type: String,
             required: true,
+            enum: ['TEXT', 'MEDIA'],
         },
         content: {
             type: String,
@@ -82,8 +84,8 @@ export type PostObject = {
     dislikes?: number;
     likers?: string[];
     dislikers?: string[];
-    postType?: PostType;
-    contentType?: ContentType;
+    postType?: string;
+    contentType?: string;
     content?: string;
     createdAt?: Date;
     updatedAt?: Date;
@@ -117,8 +119,8 @@ export type PostJSON = {
     dislikes?: number;
     likers?: string[];
     dislikers?: string[];
-    postType?: PostType;
-    contentType?: ContentType;
+    postType?: string;
+    contentType?: string;
     content?: string;
     createdAt?: string;
     updatedAt?: string;

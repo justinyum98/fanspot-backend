@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import faker from 'faker';
 import { connectDatabase, closeDatabase } from '../../src/database';
-import { UserDocument } from '../../src/database/models/UserModel';
+import { UserDocument, UserObject } from '../../src/database/models/UserModel';
 import { createUser } from '../../src/database/dataAccess/User';
 import { PostDocument, PostObject } from '../../src/database/models/PostModel';
 import { createPost, findPostById } from '../../src/database/dataAccess/Post';
@@ -33,14 +33,17 @@ describe('Post data access methods', () => {
         };
 
         // Create text post
-        textPost = await createPost(
+        const [newPost, user] = await createPost(
             requiredPostData.poster,
             requiredPostData.title,
             requiredPostData.postType,
             requiredPostData.contentType,
             requiredPostData.content,
         );
+        textPost = newPost;
+        userDoc = user;
         const postObject: PostObject = textPost.toObject();
+        const userObject: UserObject = userDoc.toObject();
 
         expect(postObject.id).toBeDefined();
         expect(postObject.poster).toEqual(requiredPostData.poster);
@@ -54,6 +57,9 @@ describe('Post data access methods', () => {
         expect(postObject.content).toEqual(requiredPostData.content);
         expect(postObject.createdAt).toBeDefined();
         expect(postObject.updatedAt).toBeDefined();
+
+        expect(userObject.posts.length).toEqual(1);
+        expect(userObject.posts[0]).toEqual(postObject.id);
     });
 
     it('can create a new media Post', async () => {
@@ -66,13 +72,15 @@ describe('Post data access methods', () => {
         };
 
         // Create media post
-        mediaPost = await createPost(
+        const [newPost, user] = await createPost(
             requiredPostData.poster,
             requiredPostData.title,
             requiredPostData.postType,
             requiredPostData.contentType,
             requiredPostData.content,
         );
+        mediaPost = newPost;
+        userDoc = user;
         const postObject: PostObject = mediaPost.toObject();
 
         expect(postObject.id).toBeDefined();

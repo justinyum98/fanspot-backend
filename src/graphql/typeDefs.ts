@@ -61,6 +61,7 @@ export const typeDefs = gql`
         # Private (requires token)
         getCurrentUserFollowers: [Follower!]!
         getCurrentUserFollowing: [Follower!]!
+        getCurrentUserPosts: [Post!]!
     }
 
     type Follower {

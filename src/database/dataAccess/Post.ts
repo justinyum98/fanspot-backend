@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
 import { PostModel, PostDocument } from '../models/PostModel';
+import { UserDocument } from '../models/UserModel';
+import { findUserById } from '../dataAccess/User';
+import NotFoundError from '../../errors/NotFoundError';
 
 export async function findPostById(id: string | mongoose.Types.ObjectId): Promise<PostDocument> {
     let post;
@@ -17,9 +20,12 @@ export async function createPost(
     postType: string,
     contentType: string,
     content: string,
-): Promise<PostDocument> {
+): Promise<[PostDocument, UserDocument]> {
+    let user: UserDocument;
     let newPost: PostDocument;
     try {
+        user = await findUserById(poster);
+        if (!user) throw new NotFoundError('User');
         newPost = new PostModel({
             poster,
             title,
@@ -28,8 +34,10 @@ export async function createPost(
             content,
         });
         await newPost.save();
+        user.posts.push(newPost.id);
+        await user.save();
     } catch (error) {
         throw error;
     }
-    return newPost;
+    return [newPost, user];
 }

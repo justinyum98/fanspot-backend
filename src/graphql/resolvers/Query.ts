@@ -3,6 +3,7 @@ import { Follower } from '../types';
 import { verifyJWT } from '../../utils/jwt';
 import { findUserById } from '../../database/dataAccess/User';
 import { UserDocument } from '../../database/models/UserModel';
+import { PostDocument, PostObject } from '../../database/models/PostModel';
 import PrivacyError from '../../errors/PrivacyError';
 
 export const Query = {
@@ -49,6 +50,16 @@ export const Query = {
                 return { id: user.id, username: user.username, profilePictureUrl: user.profilePictureUrl };
             });
             return followingPayload;
+        },
+        getCurrentUserPosts: async (parent: any, args: any, context: { token: string }): Promise<PostObject[]> => {
+            const decodedToken = verifyJWT(context.token);
+            let currentUser: UserDocument = await findUserById(decodedToken.id);
+            currentUser = await currentUser.populate('posts').execPopulate();
+            const posts: mongoose.Types.ObjectId[] | PostDocument[] = currentUser.posts.toObject();
+            const postsPayload: PostObject[] = (posts as PostDocument[]).map((post: PostDocument) => {
+                return post.toObject();
+            });
+            return postsPayload;
         },
     },
 };

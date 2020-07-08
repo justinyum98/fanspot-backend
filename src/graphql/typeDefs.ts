@@ -57,6 +57,7 @@ export const typeDefs = gql`
         sayHello: String!
         getUserFollowers(userId: ID!): [Follower!]!
         getUserFollowing(userId: ID!): [Follower!]!
+        getUserPosts(userId: ID!): [Post!]!
 
         # Private (requires token)
         getCurrentUserFollowers: [Follower!]!

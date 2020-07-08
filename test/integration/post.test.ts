@@ -87,6 +87,25 @@ describe('Post feature', () => {
             }
         `;
 
+        const GET_USER_POSTS = gql`
+            query GetUserPosts($userId: ID!) {
+                getUserPosts(userId: $userId) {
+                    id
+                    poster
+                    title
+                    likes
+                    dislikes
+                    likers
+                    dislikers
+                    postType
+                    contentType
+                    content
+                    createdAt
+                    updatedAt
+                }
+            }
+        `;
+
         const DELETE_POST = gql`
             mutation DeletePost($postId: ID!) {
                 deletePost(postId: $postId) {
@@ -148,6 +167,34 @@ describe('Post feature', () => {
             const payload = res.data.getCurrentUserPosts;
             const postObj = createdPost.toObject();
 
+            const expectedPayload: [PostObject] = [
+                {
+                    id: postObj.id,
+                    poster: currentUser.id,
+                    title: postObj.title,
+                    likes: postObj.likes,
+                    dislikes: postObj.dislikes,
+                    likers: postObj.likers,
+                    dislikers: postObj.dislikers,
+                    postType: postObj.postType,
+                    contentType: postObj.contentType,
+                    createdAt: postObj.createdAt,
+                    updatedAt: postObj.updatedAt,
+                },
+            ];
+
+            expect(payload).toMatchObject(expectedPayload);
+        });
+
+        it("can get the user's posts from the public resolver getUserPosts", async () => {
+            const res = await client.query({
+                query: GET_USER_POSTS,
+                variables: {
+                    userId: currentUser.id,
+                },
+            });
+            const payload = res.data.getUserPosts;
+            const postObj = createdPost.toObject();
             const expectedPayload: [PostObject] = [
                 {
                     id: postObj.id,

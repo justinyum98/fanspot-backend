@@ -1,23 +1,23 @@
 import mongoose = require('mongoose');
 import { PostDocument } from './PostModel';
 
-export type Privacy = {
+export interface Privacy {
     follow: boolean;
-};
+}
 
-export type UserDocument = mongoose.Document & {
+export interface UserDocument extends mongoose.Document {
     username: string;
     password: string;
     email: string;
     profilePictureUrl: string;
     privacy: Privacy;
     isArtist: boolean;
-    followers: mongoose.Types.Array<mongoose.Types.ObjectId> | mongoose.Types.DocumentArray<UserDocument>;
-    following: mongoose.Types.Array<mongoose.Types.ObjectId> | mongoose.Types.DocumentArray<UserDocument>;
-    posts: mongoose.Types.Array<mongoose.Types.ObjectId> | mongoose.Types.DocumentArray<PostDocument>;
+    followers: mongoose.Types.Array<UserDocument['_id']>;
+    following: mongoose.Types.Array<UserDocument['_id']>;
+    posts: mongoose.Types.Array<PostDocument['_id']>;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 const UserSchema: mongoose.Schema = new mongoose.Schema(
     {
@@ -57,7 +57,7 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
     { timestamps: true },
 );
 
-export type UserJSON = {
+export interface UserJSON {
     id?: string;
     username?: string;
     password?: string;
@@ -70,7 +70,7 @@ export type UserJSON = {
     posts?: string[];
     createdAt?: string;
     updatedAt?: string;
-};
+}
 
 UserSchema.set('toJSON', {
     versionKey: false,
@@ -100,7 +100,7 @@ UserSchema.set('toJSON', {
     },
 });
 
-export type UserObject = {
+export interface UserObject {
     id?: string;
     username?: string;
     password?: string;
@@ -113,7 +113,7 @@ export type UserObject = {
     posts?: string[];
     createdAt?: Date;
     updatedAt?: Date;
-};
+}
 
 UserSchema.set('toObject', {
     versionKey: false,

@@ -1,5 +1,6 @@
+import mongoose from 'mongoose';
 import { AuthenticationError } from 'apollo-server-express';
-import { AuthPayload, FollowMutationPayload, CreatePostMutationResponse } from '../types';
+import { AuthPayload, FollowMutationPayload, CreatePostMutationResponse, DeletePostMutationResponse } from '../types';
 import { UserDocument } from '../../database/models/UserModel';
 import {
     findUserById,
@@ -10,11 +11,12 @@ import {
     unfollowUser,
 } from '../../database/dataAccess/User';
 import { PostDocument, PostObject, PostType, ContentType } from '../../database/models/PostModel';
-import { createPost } from '../../database/dataAccess/Post';
+import { createPost, findPostById, deletePostById } from '../../database/dataAccess/Post';
 import { generateJWT, verifyJWT } from '../../utils/jwt';
 import { validatePasswordMatch } from '../../utils/password';
 // import { cacheUser } from '../../redis/actions';
 import NotFoundError from '../../errors/NotFoundError';
+import NotAuthorizedError from '../../errors/NotAuthorizedError';
 
 export const Mutation = {
     Mutation: {
@@ -95,6 +97,49 @@ export const Mutation = {
                 success: true,
                 message: 'Post successfully created.',
                 post: newPost.toObject(),
+            };
+        },
+        /**
+         * @description Deletes the current user's post.
+         *
+         * @param args.postId The ObjectId of the post
+         *
+         * @returns Promise of DeletePostMutationResponse
+         */
+        deletePost: async (
+            parent: any,
+            args: { postId: string },
+            context: { token: string },
+        ): Promise<DeletePostMutationResponse> => {
+            // Verify user.
+            const decodedToken = verifyJWT(context.token);
+            const currentUser = await findUserById(decodedToken.id);
+
+            // Check if the post exists. If it doesn't, throw NotFoundError.
+            const post: PostDocument = await findPostById(args.postId);
+            if (!post) throw new NotFoundError('Post');
+
+            // Check if the post belongs to the user. If it doesn't, throw NotAuthorizedError.
+            if (post.poster.toString() !== currentUser.id) throw new NotAuthorizedError('delete post');
+            if (!currentUser.posts.includes(post.id)) throw new NotAuthorizedError('delete post');
+
+            // Delete the post by
+            try {
+                // (1) Remove the post id from user's "posts"
+                currentUser.posts.pull(post.id);
+                await currentUser.save();
+
+                // TODO: Once you add 'Artist', 'Album', and 'Song', remove post from their respective 'posts' according to type.
+            } catch (error) {
+                throw error;
+            }
+            // (2) Delete the post from database
+            const deletedPostId = await deletePostById(post.id);
+            return {
+                code: '200',
+                success: true,
+                message: 'Post successfully deleted.',
+                deletedPostId,
             };
         },
     },

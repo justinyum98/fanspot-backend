@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { UserDocument } from '../models/UserModel';
 
 export enum PostType {
     Artist = 'ARTIST',
@@ -11,19 +12,19 @@ export enum ContentType {
     Media = 'MEDIA',
 }
 
-export type PostDocument = mongoose.Document & {
-    poster: string;
+export interface PostDocument extends mongoose.Document {
+    poster: UserDocument['_id'];
     title: string;
     likes: number;
     dislikes: number;
-    likers: string[];
-    dislikers: string[];
+    likers: mongoose.Types.Array<UserDocument['_id']>;
+    dislikers: mongoose.Types.Array<UserDocument['_id']>;
     postType: PostType;
     contentType: ContentType;
     content: string;
     createdAt: Date;
     updatedAt: Date;
-};
+}
 
 const PostSchema: mongoose.Schema = new mongoose.Schema(
     {
@@ -76,7 +77,7 @@ const PostSchema: mongoose.Schema = new mongoose.Schema(
     { timestamps: true },
 );
 
-export type PostObject = {
+export interface PostObject {
     id?: string;
     poster?: string;
     title?: string;
@@ -89,7 +90,7 @@ export type PostObject = {
     content?: string;
     createdAt?: Date;
     updatedAt?: Date;
-};
+}
 
 PostSchema.set('toObject', {
     versionKey: false,
@@ -111,7 +112,7 @@ PostSchema.set('toObject', {
     },
 });
 
-export type PostJSON = {
+export interface PostJSON {
     id?: string;
     poster?: string;
     title?: string;
@@ -124,7 +125,7 @@ export type PostJSON = {
     content?: string;
     createdAt?: string;
     updatedAt?: string;
-};
+}
 
 PostSchema.set('toJSON', {
     versionKey: false,

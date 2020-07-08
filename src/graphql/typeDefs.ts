@@ -85,6 +85,7 @@ export const typeDefs = gql`
             contentType: ContentType!
             content: String!
         ): CreatePostMutationResponse
+        deletePost(postId: ID!): DeletePostMutationResponse
     }
 
     interface MutationResponse {
@@ -109,5 +110,12 @@ export const typeDefs = gql`
         success: Boolean!
         message: String!
         post: Post
+    }
+
+    type DeletePostMutationResponse implements MutationResponse {
+        code: String!
+        success: Boolean!
+        message: String!
+        deletedPostId: ID!
     }
 `;

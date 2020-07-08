@@ -4,7 +4,7 @@ import { connectDatabase, closeDatabase } from '../../src/database';
 import { UserDocument, UserObject } from '../../src/database/models/UserModel';
 import { createUser } from '../../src/database/dataAccess/User';
 import { PostDocument, PostObject } from '../../src/database/models/PostModel';
-import { createPost, findPostById } from '../../src/database/dataAccess/Post';
+import { createPost, findPostById, deletePostById } from '../../src/database/dataAccess/Post';
 
 describe('Post data access methods', () => {
     let connection: mongoose.Connection;
@@ -103,5 +103,13 @@ describe('Post data access methods', () => {
         const expectedPost = textPost.toObject();
 
         expect(actualPost).toEqual(expectedPost);
+    });
+
+    it('can delete a post by id', async () => {
+        const deletedPostId = await deletePostById(textPost.id);
+
+        const foundPost = await findPostById(deletedPostId);
+
+        expect(foundPost).toBeNull();
     });
 });

@@ -1,11 +1,11 @@
 import { UserObject } from '../database/models/UserModel';
 import { PostObject } from '../database/models/PostModel';
 
-export type Follower = {
+export interface Follower {
     id: string;
     username: string;
     profilePictureUrl: string;
-};
+}
 
 // Mutation
 export interface MutationResponse {
@@ -14,16 +14,20 @@ export interface MutationResponse {
     message: string;
 }
 
-export type AuthPayload = {
+export interface AuthPayload {
     user: UserObject;
     token: string;
-};
+}
 
-export type FollowMutationPayload = {
+export interface FollowMutationPayload {
     currentUserFollowing: string[];
     targetUserFollowers: string[];
-};
+}
 
 export interface CreatePostMutationResponse extends MutationResponse {
     post: PostObject;
+}
+
+export interface DeletePostMutationResponse extends MutationResponse {
+    deletedPostId: string;
 }

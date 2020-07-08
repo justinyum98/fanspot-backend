@@ -7,9 +7,9 @@ import { connectDatabase, closeDatabase } from '../../src/database';
 import { UserDocument } from '../../src/database/models/UserModel';
 import { createUser, findUserById } from '../../src/database/dataAccess/User';
 import { PostDocument, PostObject, PostType, ContentType } from '../../src/database/models/PostModel';
-import { findPostById } from '../../src/database/dataAccess/Post';
+import { findPostById, createPost } from '../../src/database/dataAccess/Post';
 import { generateJWT } from '../../src/utils/jwt';
-import { CreatePostMutationResponse } from '../../src/graphql/types';
+import { CreatePostMutationResponse, DeletePostMutationResponse } from '../../src/graphql/types';
 
 describe('Post feature', () => {
     let connection: mongoose.Connection;
@@ -87,6 +87,17 @@ describe('Post feature', () => {
             }
         `;
 
+        const DELETE_POST = gql`
+            mutation DeletePost($postId: ID!) {
+                deletePost(postId: $postId) {
+                    code
+                    success
+                    message
+                    deletedPostId
+                }
+            }
+        `;
+
         it('can create a post', async () => {
             const requiredData = {
                 title: faker.lorem.words(6),
@@ -154,6 +165,54 @@ describe('Post feature', () => {
             ];
 
             expect(payload).toMatchObject(expectedPayload);
+        });
+
+        it("can delete the current user's post", async () => {
+            const createdPostId = createdPost.id;
+            const res = await client.mutate({
+                mutation: DELETE_POST,
+                variables: {
+                    postId: createdPostId,
+                },
+            });
+            const payload = res.data.deletePost;
+            const expectedPayload: DeletePostMutationResponse = {
+                code: '200',
+                success: true,
+                message: 'Post successfully deleted.',
+                deletedPostId: createdPostId,
+            };
+
+            expect(payload).toMatchObject(expectedPayload);
+        });
+
+        it("cannot delete a post that doesn't belong to the current user", async () => {
+            // Create new user
+            const newUser = await createUser(
+                faker.internet.userName(),
+                faker.internet.password(),
+                faker.internet.email(),
+            );
+            // Create new post with that new user
+            const [newPost] = await createPost(
+                newUser.id,
+                faker.lorem.words(6),
+                'ARTIST',
+                'TEXT',
+                faker.lorem.paragraphs(2),
+            );
+
+            // Try to delete that post as current user.
+            const res = await client.mutate({
+                mutation: DELETE_POST,
+                variables: {
+                    postId: newPost.id,
+                },
+            });
+
+            expect(res.data.deletePost).toBeNull();
+            expect(res.errors).toBeDefined();
+            expect(res.errors[0].message).toEqual('Not authorized to delete post');
         });
     });
 });

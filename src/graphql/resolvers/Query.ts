@@ -3,6 +3,7 @@ import { Follower } from '../types';
 import { verifyJWT } from '../../utils/jwt';
 import { findUserById } from '../../database/dataAccess/User';
 import { UserDocument } from '../../database/models/UserModel';
+import { PostDocument, PostObject } from '../../database/models/PostModel';
 import PrivacyError from '../../errors/PrivacyError';
 
 export const Query = {
@@ -29,6 +30,20 @@ export const Query = {
             });
             return followingPayload;
         },
+        /**
+         * Retrieves a user's posts.
+         * * Functionally, there is not difference from 'getUserPosts' and 'getCurrentUserPosts'.
+         * * However, I created two separate resolvers if, in the future, I add privacy settings on posts.
+         */
+        getUserPosts: async (parent: any, args: { userId: string }, context: any): Promise<PostObject[]> => {
+            let targetUser: UserDocument = await findUserById(args.userId);
+            targetUser = await targetUser.populate('posts').execPopulate();
+            const posts: PostDocument[] = targetUser.posts.toObject();
+            const postsPayload: PostObject[] = posts.map((post: PostDocument) => {
+                return post.toObject();
+            });
+            return postsPayload;
+        },
         // Private (requires token)
         getCurrentUserFollowers: async (parent: any, args: any, context: { token: string }): Promise<Follower[]> => {
             const decodedToken = verifyJWT(context.token);
@@ -49,6 +64,16 @@ export const Query = {
                 return { id: user.id, username: user.username, profilePictureUrl: user.profilePictureUrl };
             });
             return followingPayload;
+        },
+        getCurrentUserPosts: async (parent: any, args: any, context: { token: string }): Promise<PostObject[]> => {
+            const decodedToken = verifyJWT(context.token);
+            let currentUser: UserDocument = await findUserById(decodedToken.id);
+            currentUser = await currentUser.populate('posts').execPopulate();
+            const posts: mongoose.Types.ObjectId[] | PostDocument[] = currentUser.posts.toObject();
+            const postsPayload: PostObject[] = (posts as PostDocument[]).map((post: PostDocument) => {
+                return post.toObject();
+            });
+            return postsPayload;
         },
     },
 };

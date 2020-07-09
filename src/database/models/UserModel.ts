@@ -1,79 +1,76 @@
 import mongoose = require('mongoose');
+import { PostDocument } from './PostModel';
 
-export type Privacy = {
+export interface Privacy {
     follow: boolean;
-};
+}
 
-export type UserDocument = mongoose.Document & {
+export interface UserDocument extends mongoose.Document {
     username: string;
     password: string;
     email: string;
     profilePictureUrl: string;
     privacy: Privacy;
     isArtist: boolean;
-    followers: mongoose.Types.Array<mongoose.Types.ObjectId> | mongoose.Types.DocumentArray<UserDocument>;
-    following: mongoose.Types.Array<mongoose.Types.ObjectId> | mongoose.Types.DocumentArray<UserDocument>;
-};
+    followers: mongoose.Types.Array<UserDocument['_id']>;
+    following: mongoose.Types.Array<UserDocument['_id']>;
+    posts: mongoose.Types.Array<PostDocument['_id']>;
+    createdAt: Date;
+    updatedAt: Date;
+}
 
-// UserDocument.toObject() (for resolvers)
-export type UserObject = {
-    id?: string;
-    username?: string;
-    password?: string;
-    email?: string;
-    profilePictureUrl?: string;
-    privacy?: Privacy;
-    isArtist?: boolean;
-    followers?: string[];
-    following?: string[];
-};
-
-// UserDocument.toJSON() (for caching)
-export type UserJSON = {
-    id?: string;
-    username?: string;
-    password?: string;
-    email?: string;
-    profilePictureUrl?: string;
-    privacy?: Privacy;
-    isArtist?: boolean;
-    followers?: string[];
-    following?: string[];
-};
-
-const UserSchema: mongoose.Schema = new mongoose.Schema({
-    username: {
-        type: String,
-        required: true,
-        unique: true,
-    },
-    password: {
-        type: String,
-        required: true,
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-    },
-    profilePictureUrl: {
-        type: String,
-        required: false,
-    },
-    privacy: {
-        // If true, the user's following and followers lists are public.
-        follow: {
-            type: Boolean,
+const UserSchema: mongoose.Schema = new mongoose.Schema(
+    {
+        username: {
+            type: String,
+            required: true,
+            unique: true,
+        },
+        password: {
+            type: String,
             required: true,
         },
+        email: {
+            type: String,
+            required: true,
+            unique: true,
+        },
+        profilePictureUrl: {
+            type: String,
+            default: null,
+        },
+        privacy: {
+            // If true, the user's following and followers lists are public.
+            follow: {
+                type: Boolean,
+                default: false,
+            },
+        },
+        isArtist: {
+            type: Boolean,
+            default: false,
+        },
+        followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+        following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+        posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
     },
-    isArtist: {
-        type: Boolean,
-        required: true,
-    },
-    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-});
+    { timestamps: true },
+);
+
+export interface UserJSON {
+    id?: string;
+    username?: string;
+    password?: string;
+    email?: string;
+    profilePictureUrl?: string;
+    privacy?: Privacy;
+    isArtist?: boolean;
+    followers?: string[];
+    following?: string[];
+    posts?: string[];
+    createdAt?: string;
+    updatedAt?: string;
+}
 
 UserSchema.set('toJSON', {
     versionKey: false,
@@ -92,8 +89,31 @@ UserSchema.set('toJSON', {
                 followers[index] = userId.toString();
             },
         );
+        ret.posts.forEach(
+            (postId: mongoose.Types.ObjectId, index: number, posts: Array<mongoose.Types.ObjectId | string>) => {
+                posts[index] = postId.toString();
+            },
+        );
+        // Timestamp
+        ret.createdAt = ret.createdAt.toISOString();
+        ret.updatedAt = ret.updatedAt.toISOString();
     },
 });
+
+export interface UserObject {
+    id?: string;
+    username?: string;
+    password?: string;
+    email?: string;
+    profilePictureUrl?: string;
+    privacy?: Privacy;
+    isArtist?: boolean;
+    followers?: string[];
+    following?: string[];
+    posts?: string[];
+    createdAt?: Date;
+    updatedAt?: Date;
+}
 
 UserSchema.set('toObject', {
     versionKey: false,
@@ -110,6 +130,11 @@ UserSchema.set('toObject', {
         ret.followers.forEach(
             (userId: mongoose.Types.ObjectId, index: number, followers: Array<mongoose.Types.ObjectId | string>) => {
                 followers[index] = userId.toString();
+            },
+        );
+        ret.posts.forEach(
+            (postId: mongoose.Types.ObjectId, index: number, posts: Array<mongoose.Types.ObjectId | string>) => {
+                posts[index] = postId.toString();
             },
         );
     },

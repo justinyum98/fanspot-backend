@@ -1,7 +1,7 @@
 import mongoose = require('mongoose');
 import faker = require('faker');
 import { connectDatabase, closeDatabase } from '../../src/database';
-import { UserDocument } from '../../src/database/models/UserModel';
+import { UserDocument, UserObject } from '../../src/database/models/UserModel';
 import { findUserById, createUser, followUser, unfollowUser } from '../../src/database/dataAccess/User';
 import { validatePasswordMatch } from '../../src/utils/password';
 
@@ -29,15 +29,22 @@ describe('User data access methods', () => {
 
         currentUser = await createUser(requiredData.username, requiredData.password, requiredData.email);
         const passwordsMatch = await validatePasswordMatch(requiredData.password, currentUser.password);
-        const userObject = currentUser.toObject();
+        const userObject: UserObject = currentUser.toObject();
 
         expect(userObject.id).toBeDefined();
         expect(userObject.username).toEqual(requiredData.username);
         expect(passwordsMatch).toEqual(true);
         expect(userObject.email).toEqual(requiredData.email);
+        expect(userObject.profilePictureUrl).toBeNull();
+        expect(userObject.privacy).toEqual({
+            follow: false,
+        });
         expect(userObject.isArtist).toEqual(false);
         expect(userObject.followers).toEqual([]);
         expect(userObject.following).toEqual([]);
+        expect(userObject.posts).toEqual([]);
+        expect(userObject.createdAt).toBeDefined();
+        expect(userObject.updatedAt).toBeDefined();
     });
 
     it('can follow a user and update both users', async () => {

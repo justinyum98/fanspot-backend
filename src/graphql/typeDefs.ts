@@ -8,13 +8,12 @@ export const typeDefs = gql`
         password: String!
         email: EmailAddress!
         isArtist: Boolean!
+        artist: ID # id of Artist
         profilePictureUrl: URL
         privacy: Privacy!
         followers: [ID!]! # ids of Users
         following: [ID!]! # ids of Users
         posts: [ID!]! # ids of Posts
-        # comments: [Comment!]!
-        # activities: [Activity!]!
         createdAt: DateTime!
         updatedAt: DateTime!
     }
@@ -22,6 +21,47 @@ export const typeDefs = gql`
     type Privacy {
         # If true, your following and followers lists are public.
         follow: Boolean!
+    }
+
+    ### ARTIST ###
+    type Artist {
+        id: ID!
+        name: String!
+        user: ID # id of User
+        biography: String
+        images: [URL!]!
+        albums: [ID!]! # ids of Albums
+        songs: [ID!]! # ids of Songs
+        posts: [ID!]! # ids of Posts
+        likes: Int!
+        likers: [ID!]!
+    }
+
+    ### ALBUM ###
+    type Album {
+        id: ID!
+        title: String!
+        description: String
+        cover: URL!
+        artists: [ID!]! # ids of Artists
+        tracks: [ID!]! # ids of Songs
+        releaseDate: DateTime!
+        posts: [ID!]! # ids of Posts
+        likes: Int!
+        likers: [ID!]! # ids of Users
+    }
+
+    ### SONG ###
+    type Song {
+        id: ID!
+        title: String!
+        description: String
+        artists: [ID!]! # ids of Artists
+        features: [ID!]! # ids of Artists
+        album: ID! # id of Album
+        posts: [ID!]! # ids of posts
+        likes: Int!
+        likers: [ID!]! # ids of Users
     }
 
     ### POST ###

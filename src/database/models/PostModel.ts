@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
-import { UserDocument } from '../models/UserModel';
+import { UserDocument } from './UserModel';
+import { ArtistDocument } from './ArtistModel';
+import { AlbumDocument } from './AlbumModel';
+import { SongDocument } from './SongModel';
 
 export enum PostType {
     Artist = 'ARTIST',
@@ -20,6 +23,9 @@ export interface PostDocument extends mongoose.Document {
     likers: mongoose.Types.Array<UserDocument['_id']>;
     dislikers: mongoose.Types.Array<UserDocument['_id']>;
     postType: PostType;
+    artist: ArtistDocument['_id'];
+    album: AlbumDocument['_id'];
+    song: SongDocument['_id'];
     contentType: ContentType;
     content: string;
     createdAt: Date;
@@ -51,19 +57,21 @@ const PostSchema: mongoose.Schema = new mongoose.Schema(
             required: true,
             enum: ['ARTIST', 'ALBUM', 'SONG'],
         },
-        // TODO: See https://trello.com/c/3L5XNXnR
-        // artist: {
-        //     type: mongoose.Schema.Types.ObjectId,
-        //     ref: 'Artist',
-        // },
-        // album: {
-        //     type: mongoose.Schema.Types.ObjectId,
-        //     ref: 'Album',
-        // },
-        // song: {
-        //     type: mongoose.Schema.Types.ObjectId,
-        //     ref: 'Song',
-        // },
+        artist: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Artist',
+            default: null,
+        },
+        album: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Album',
+            default: null,
+        },
+        song: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Song',
+            default: null,
+        },
         contentType: {
             type: String,
             required: true,
@@ -86,6 +94,9 @@ export interface PostObject {
     likers?: string[];
     dislikers?: string[];
     postType?: string;
+    artist?: string;
+    album?: string;
+    song?: string;
     contentType?: string;
     content?: string;
     createdAt?: Date;
@@ -109,44 +120,59 @@ PostSchema.set('toObject', {
                 dislikers[index] = userId.toString();
             },
         );
+        if (ret.artist) {
+            ret.artist = ret.artist.toString();
+        }
+        if (ret.album) {
+            ret.album = ret.album.toString();
+        }
+        if (ret.song) {
+            ret.song = ret.song.toString();
+        }
     },
 });
 
-export interface PostJSON {
-    id?: string;
-    poster?: string;
-    title?: string;
-    likes?: number;
-    dislikes?: number;
-    likers?: string[];
-    dislikers?: string[];
-    postType?: string;
-    contentType?: string;
-    content?: string;
-    createdAt?: string;
-    updatedAt?: string;
-}
+// export interface PostJSON {
+//     id?: string;
+//     poster?: string;
+//     title?: string;
+//     likes?: number;
+//     dislikes?: number;
+//     likers?: string[];
+//     dislikers?: string[];
+//     postType?: string;
+//     artist?: string;
+//     album?: string;
+//     song?: string;
+//     contentType?: string;
+//     content?: string;
+//     createdAt?: string;
+//     updatedAt?: string;
+// }
 
-PostSchema.set('toJSON', {
-    versionKey: false,
-    virtuals: true,
-    transform: (doc: PostDocument, ret) => {
-        ret.id = ret._id.toString();
-        delete ret._id;
-        ret.likers.forEach(
-            (userId: mongoose.Types.ObjectId, index: number, likers: Array<mongoose.Types.ObjectId | string>) => {
-                likers[index] = userId.toString();
-            },
-        );
-        ret.dislikers.forEach(
-            (userId: mongoose.Types.ObjectId, index: number, dislikers: Array<mongoose.Types.ObjectId | string>) => {
-                dislikers[index] = userId.toString();
-            },
-        );
-        // Timestamps
-        ret.createdAt = ret.createdAt.toISOString();
-        ret.updatedAt = ret.updatedAt.toISOString();
-    },
-});
+// PostSchema.set('toJSON', {
+//     versionKey: false,
+//     virtuals: true,
+//     transform: (doc: PostDocument, ret) => {
+//         ret.id = ret._id.toString();
+//         delete ret._id;
+//         ret.likers.forEach(
+//             (userId: mongoose.Types.ObjectId, index: number, likers: Array<mongoose.Types.ObjectId | string>) => {
+//                 likers[index] = userId.toString();
+//             },
+//         );
+//         ret.dislikers.forEach(
+//             (userId: mongoose.Types.ObjectId, index: number, dislikers: Array<mongoose.Types.ObjectId | string>) => {
+//                 dislikers[index] = userId.toString();
+//             },
+//         );
+//         ret.artist = ret.artist.toString();
+//         ret.album = ret.album.toString();
+//         ret.song = ret.song.toString();
+//         // Timestamps
+//         ret.createdAt = ret.createdAt.toISOString();
+//         ret.updatedAt = ret.updatedAt.toISOString();
+//     },
+// });
 
 export const PostModel: mongoose.Model<PostDocument> = mongoose.model<PostDocument>('Post', PostSchema);

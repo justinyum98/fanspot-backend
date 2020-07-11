@@ -1,5 +1,6 @@
 import mongoose = require('mongoose');
 import { PostDocument } from './PostModel';
+import { ArtistDocument } from './ArtistModel';
 
 export interface Privacy {
     follow: boolean;
@@ -12,6 +13,7 @@ export interface UserDocument extends mongoose.Document {
     profilePictureUrl: string;
     privacy: Privacy;
     isArtist: boolean;
+    artist: ArtistDocument['_id'];
     followers: mongoose.Types.Array<UserDocument['_id']>;
     following: mongoose.Types.Array<UserDocument['_id']>;
     posts: mongoose.Types.Array<PostDocument['_id']>;
@@ -50,12 +52,61 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        artist: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Artist',
+            default: null,
+        },
         followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
         following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
         posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
     },
     { timestamps: true },
 );
+
+export interface UserObject {
+    id?: string;
+    username?: string;
+    password?: string;
+    email?: string;
+    profilePictureUrl?: string;
+    privacy?: Privacy;
+    isArtist?: boolean;
+    artist?: string;
+    followers?: string[];
+    following?: string[];
+    posts?: string[];
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+UserSchema.set('toObject', {
+    versionKey: false,
+    virtuals: true,
+    transform: (doc: UserDocument, ret) => {
+        // IMPORTANT: MUST DEPOPULATE DOC BEFORE USING toObject.
+        ret.id = ret._id.toString();
+        delete ret._id;
+        if (ret.artist) {
+            ret.artist = ret.artist.toString();
+        }
+        ret.following.forEach(
+            (userId: mongoose.Types.ObjectId, index: number, following: Array<mongoose.Types.ObjectId | string>) => {
+                following[index] = userId.toString();
+            },
+        );
+        ret.followers.forEach(
+            (userId: mongoose.Types.ObjectId, index: number, followers: Array<mongoose.Types.ObjectId | string>) => {
+                followers[index] = userId.toString();
+            },
+        );
+        ret.posts.forEach(
+            (postId: mongoose.Types.ObjectId, index: number, posts: Array<mongoose.Types.ObjectId | string>) => {
+                posts[index] = postId.toString();
+            },
+        );
+    },
+});
 
 export interface UserJSON {
     id?: string;
@@ -65,6 +116,7 @@ export interface UserJSON {
     profilePictureUrl?: string;
     privacy?: Privacy;
     isArtist?: boolean;
+    artist?: string;
     followers?: string[];
     following?: string[];
     posts?: string[];
@@ -79,6 +131,9 @@ UserSchema.set('toJSON', {
         // IMPORTANT: MUST DEPOPULATE FIELDS BEFORE USING toObject.
         ret.id = ret._id.toString();
         delete ret._id;
+        if (ret.artist) {
+            ret.artist = ret.artist.toString();
+        }
         ret.following.forEach(
             (userId: mongoose.Types.ObjectId, index: number, following: Array<mongoose.Types.ObjectId | string>) => {
                 following[index] = userId.toString();
@@ -97,46 +152,6 @@ UserSchema.set('toJSON', {
         // Timestamp
         ret.createdAt = ret.createdAt.toISOString();
         ret.updatedAt = ret.updatedAt.toISOString();
-    },
-});
-
-export interface UserObject {
-    id?: string;
-    username?: string;
-    password?: string;
-    email?: string;
-    profilePictureUrl?: string;
-    privacy?: Privacy;
-    isArtist?: boolean;
-    followers?: string[];
-    following?: string[];
-    posts?: string[];
-    createdAt?: Date;
-    updatedAt?: Date;
-}
-
-UserSchema.set('toObject', {
-    versionKey: false,
-    virtuals: true,
-    transform: (doc: UserDocument, ret) => {
-        // IMPORTANT: MUST DEPOPULATE DOC BEFORE USING toObject.
-        ret.id = ret._id.toString();
-        delete ret._id;
-        ret.following.forEach(
-            (userId: mongoose.Types.ObjectId, index: number, following: Array<mongoose.Types.ObjectId | string>) => {
-                following[index] = userId.toString();
-            },
-        );
-        ret.followers.forEach(
-            (userId: mongoose.Types.ObjectId, index: number, followers: Array<mongoose.Types.ObjectId | string>) => {
-                followers[index] = userId.toString();
-            },
-        );
-        ret.posts.forEach(
-            (postId: mongoose.Types.ObjectId, index: number, posts: Array<mongoose.Types.ObjectId | string>) => {
-                posts[index] = postId.toString();
-            },
-        );
     },
 });
 

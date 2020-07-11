@@ -9,6 +9,7 @@ export interface ArtistDocument extends mongoose.Document {
     name: string;
     user: UserDocument['_id'];
     biography: string;
+    images: string[];
     albums: mongoose.Types.Array<AlbumDocument['_id']>;
     songs: mongoose.Types.Array<SongDocument['_id']>;
     posts: mongoose.Types.Array<PostDocument['_id']>;
@@ -31,6 +32,7 @@ const ArtistSchema: mongoose.Schema = new mongoose.Schema({
         type: String,
         default: null,
     },
+    images: [String],
     albums: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Album' }],
     songs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Song' }],
     posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
@@ -46,6 +48,7 @@ export interface ArtistObject {
     name: string;
     user: string;
     biography: string;
+    images: string[];
     albums: string[];
     songs: string[];
     posts: string[];

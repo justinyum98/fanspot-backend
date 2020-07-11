@@ -8,6 +8,7 @@ import { PostDocument } from './PostModel';
 export interface AlbumDocument extends mongoose.Document {
     title: string;
     description: string;
+    cover: string;
     artists: mongoose.Types.Array<ArtistDocument['_id']>;
     tracks: mongoose.Types.Array<SongDocument['_id']>;
     releaseDate: Date;
@@ -24,6 +25,10 @@ const AlbumSchema: mongoose.Schema = new mongoose.Schema({
     description: {
         type: String,
         default: null,
+    },
+    cover: {
+        type: String,
+        required: true,
     },
     artists: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Artist' }],
     tracks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Song' }],
@@ -43,6 +48,7 @@ export interface ArtistObject {
     id: string;
     title: string;
     description: string;
+    cover: string;
     artists: string[];
     tracks: string[];
     releaseDate: Date;

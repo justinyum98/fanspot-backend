@@ -8,8 +8,10 @@ import { PostDocument } from './PostModel';
 export interface ArtistDocument extends mongoose.Document {
     name: string;
     user: UserDocument['_id'];
+    spotifyId: string;
     biography: string;
-    images: string[];
+    profilePictureUrl: string;
+    genres: string[];
     albums: mongoose.Types.Array<AlbumDocument['_id']>;
     songs: mongoose.Types.Array<SongDocument['_id']>;
     posts: mongoose.Types.Array<PostDocument['_id']>;
@@ -21,6 +23,7 @@ const ArtistSchema: mongoose.Schema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
+        unique: true,
     },
     // (Optional) The Fanspot user account associated with the artist.
     user: {
@@ -28,11 +31,19 @@ const ArtistSchema: mongoose.Schema = new mongoose.Schema({
         ref: 'User',
         default: null,
     },
+    spotifyId: {
+        type: String,
+        default: null,
+    },
     biography: {
         type: String,
         default: null,
     },
-    images: [String],
+    profilePictureUrl: {
+        type: String,
+        default: null,
+    },
+    genres: [String],
     albums: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Album' }],
     songs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Song' }],
     posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
@@ -47,8 +58,10 @@ export interface ArtistObject {
     id: string;
     name: string;
     user: string;
+    spotifyId: string;
     biography: string;
-    images: string[];
+    profilePictureUrl: string;
+    genres: string[];
     albums: string[];
     songs: string[];
     posts: string[];

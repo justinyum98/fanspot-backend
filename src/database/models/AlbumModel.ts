@@ -7,8 +7,10 @@ import { PostDocument } from './PostModel';
 
 export interface AlbumDocument extends mongoose.Document {
     title: string;
+    spotifyId: string;
     description: string;
-    cover: string;
+    coverArtUrl: string;
+    albumType: string;
     artists: mongoose.Types.Array<ArtistDocument['_id']>;
     tracks: mongoose.Types.Array<SongDocument['_id']>;
     releaseDate: Date;
@@ -22,13 +24,22 @@ const AlbumSchema: mongoose.Schema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    spotifyId: {
+        type: String,
+        default: null,
+    },
     description: {
         type: String,
         default: null,
     },
-    cover: {
+    coverArtUrl: {
+        type: String,
+        default: null,
+    },
+    albumType: {
         type: String,
         required: true,
+        enum: ['album', 'single'],
     },
     artists: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Artist' }],
     tracks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Song' }],
@@ -47,8 +58,10 @@ const AlbumSchema: mongoose.Schema = new mongoose.Schema({
 export interface ArtistObject {
     id: string;
     title: string;
+    spotifyId: string;
     description: string;
-    cover: string;
+    coverArtUrl: string;
+    albumType: string;
     artists: string[];
     tracks: string[];
     releaseDate: Date;

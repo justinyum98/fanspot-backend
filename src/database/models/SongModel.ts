@@ -7,7 +7,12 @@ import { PostDocument } from './PostModel';
 
 export interface SongDocument extends mongoose.Document {
     title: string;
+    spotifyId: string;
     description: string;
+    explicit: boolean;
+    discNumber: number;
+    trackNumber: number;
+    duration: number;
     artists: mongoose.Types.Array<ArtistDocument['_id']>;
     features: mongoose.Types.Array<ArtistDocument['_id']>;
     album: AlbumDocument['_id'];
@@ -21,9 +26,30 @@ const SongSchema: mongoose.Schema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    spotifyId: {
+        type: String,
+        default: null,
+    },
     description: {
         type: String,
         default: null,
+    },
+    explicit: {
+        type: Boolean,
+        required: true,
+    },
+    discNumber: {
+        type: Number,
+        default: 1,
+    },
+    trackNumber: {
+        type: Number,
+        required: true,
+    },
+    // The song duration (in milliseconds)
+    duration: {
+        type: Number,
+        required: true,
     },
     artists: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Artist' }],
     features: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Artist' }],
@@ -43,7 +69,12 @@ const SongSchema: mongoose.Schema = new mongoose.Schema({
 export interface SongObject {
     id: string;
     title: string;
+    spotifyId: string;
     description: string;
+    explicit: boolean;
+    discNumber: number;
+    trackNumber: number;
+    duration: number;
     artists: string[];
     features: string[];
     album: string;

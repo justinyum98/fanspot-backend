@@ -23,26 +23,30 @@ export const typeDefs = gql`
         follow: Boolean!
     }
 
+    # TODO: Need to update artist, album, and song
     ### ARTIST ###
     type Artist {
         id: ID!
         name: String!
         user: ID # id of User
+        spotifyId: String
         biography: String
-        images: [URL!]!
+        profilePictureUrl: String
+        genres: [String!]!
         albums: [ID!]! # ids of Albums
-        songs: [ID!]! # ids of Songs
         posts: [ID!]! # ids of Posts
         likes: Int!
-        likers: [ID!]!
+        likers: [ID!]! # ids of Users
     }
 
     ### ALBUM ###
     type Album {
         id: ID!
         title: String!
+        spotifyId: String
         description: String
-        cover: URL!
+        coverArtUrl: URL
+        albumType: AlbumType!
         artists: [ID!]! # ids of Artists
         tracks: [ID!]! # ids of Songs
         releaseDate: DateTime!
@@ -51,13 +55,22 @@ export const typeDefs = gql`
         likers: [ID!]! # ids of Users
     }
 
+    enum AlbumType {
+        album
+        single
+    }
+
     ### SONG ###
     type Song {
         id: ID!
         title: String!
+        spotifyId: String
         description: String
+        explicit: Boolean!
+        discNumber: Int!
+        trackNumber: Int!
+        duration: Int! # duration in milliseconds (ms)
         artists: [ID!]! # ids of Artists
-        features: [ID!]! # ids of Artists
         album: ID! # id of Album
         posts: [ID!]! # ids of posts
         likes: Int!

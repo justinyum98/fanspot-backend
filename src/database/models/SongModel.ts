@@ -14,7 +14,6 @@ export interface SongDocument extends mongoose.Document {
     trackNumber: number;
     duration: number;
     artists: mongoose.Types.Array<ArtistDocument['_id']>;
-    features: mongoose.Types.Array<ArtistDocument['_id']>;
     album: AlbumDocument['_id'];
     posts: mongoose.Types.Array<PostDocument['_id']>;
     likes: number;
@@ -52,7 +51,6 @@ const SongSchema: mongoose.Schema = new mongoose.Schema({
         required: true,
     },
     artists: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Artist' }],
-    features: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Artist' }],
     album: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Album',
@@ -76,7 +74,6 @@ export interface SongObject {
     trackNumber: number;
     duration: number;
     artists: string[];
-    features: string[];
     album: string;
     posts: string[];
     likes: number;
@@ -91,12 +88,6 @@ SongSchema.set('toObject', {
         delete ret._id;
         _.forEach(
             ret.artists,
-            (artistId: mongoose.Types.ObjectId, index: number, artists: Array<mongoose.Types.ObjectId | string>) => {
-                artists[index] = artistId.toString();
-            },
-        );
-        _.forEach(
-            ret.features,
             (artistId: mongoose.Types.ObjectId, index: number, artists: Array<mongoose.Types.ObjectId | string>) => {
                 artists[index] = artistId.toString();
             },

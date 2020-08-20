@@ -8,13 +8,12 @@ export const typeDefs = gql`
         password: String!
         email: EmailAddress!
         isArtist: Boolean!
+        artist: ID # id of Artist
         profilePictureUrl: URL
         privacy: Privacy!
         followers: [ID!]! # ids of Users
         following: [ID!]! # ids of Users
         posts: [ID!]! # ids of Posts
-        # comments: [Comment!]!
-        # activities: [Activity!]!
         createdAt: DateTime!
         updatedAt: DateTime!
     }
@@ -22,6 +21,59 @@ export const typeDefs = gql`
     type Privacy {
         # If true, your following and followers lists are public.
         follow: Boolean!
+    }
+
+    ### ARTIST ###
+    type Artist {
+        id: ID!
+        name: String!
+        user: ID # id of User
+        spotifyId: String
+        biography: String
+        profilePictureUrl: String
+        genres: [String!]!
+        albums: [ID!]! # ids of Albums
+        posts: [ID!]! # ids of Posts
+        likes: Int!
+        likers: [ID!]! # ids of Users
+    }
+
+    ### ALBUM ###
+    type Album {
+        id: ID!
+        title: String!
+        spotifyId: String
+        description: String
+        coverArtUrl: URL
+        albumType: AlbumType!
+        artists: [ID!]! # ids of Artists
+        tracks: [ID!]! # ids of Tracks
+        releaseDate: DateTime!
+        posts: [ID!]! # ids of Posts
+        likes: Int!
+        likers: [ID!]! # ids of Users
+    }
+
+    enum AlbumType {
+        album
+        single
+    }
+
+    ### TRACK ###
+    type Track {
+        id: ID!
+        title: String!
+        spotifyId: String
+        description: String
+        explicit: Boolean!
+        discNumber: Int!
+        trackNumber: Int!
+        duration: Int! # duration in milliseconds (ms)
+        artists: [ID!]! # ids of Artists
+        album: ID! # id of Album
+        posts: [ID!]! # ids of posts
+        likes: Int!
+        likers: [ID!]! # ids of Users
     }
 
     ### POST ###
@@ -34,6 +86,9 @@ export const typeDefs = gql`
         likers: [ID!]! # ids of Users
         dislikers: [ID!]! #ids of Users
         postType: PostType!
+        artist: ID # id of Artist
+        album: ID # id of Album
+        track: ID # id of Track
         contentType: ContentType!
         content: String! # Either plaintext of Markdown OR media url
         createdAt: DateTime!
@@ -43,7 +98,7 @@ export const typeDefs = gql`
     enum PostType {
         ARTIST
         ALBUM
-        SONG
+        TRACK
     }
 
     enum ContentType {

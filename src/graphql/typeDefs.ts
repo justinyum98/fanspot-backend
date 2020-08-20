@@ -23,7 +23,6 @@ export const typeDefs = gql`
         follow: Boolean!
     }
 
-    # TODO: Need to update artist, album, and song
     ### ARTIST ###
     type Artist {
         id: ID!

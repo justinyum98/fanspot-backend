@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import _ from 'lodash';
 import { UserDocument } from './UserModel';
 import { ArtistDocument } from './ArtistModel';
-import { SongDocument } from './SongModel';
+import { TrackDocument } from './TrackModel';
 import { PostDocument } from './PostModel';
 
 export interface AlbumDocument extends mongoose.Document {
@@ -12,7 +12,7 @@ export interface AlbumDocument extends mongoose.Document {
     coverArtUrl: string;
     albumType: string;
     artists: mongoose.Types.Array<ArtistDocument['_id']>;
-    tracks: mongoose.Types.Array<SongDocument['_id']>;
+    tracks: mongoose.Types.Array<TrackDocument['_id']>;
     releaseDate: Date;
     posts: mongoose.Types.Array<PostDocument['_id']>;
     likes: number;
@@ -42,7 +42,7 @@ const AlbumSchema: mongoose.Schema = new mongoose.Schema({
         enum: ['album', 'single'],
     },
     artists: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Artist' }],
-    tracks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Song' }],
+    tracks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Track' }],
     releaseDate: {
         type: Date,
         required: true,

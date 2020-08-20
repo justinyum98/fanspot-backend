@@ -5,7 +5,7 @@ import { ArtistDocument } from './ArtistModel';
 import { AlbumDocument } from './AlbumModel';
 import { PostDocument } from './PostModel';
 
-export interface SongDocument extends mongoose.Document {
+export interface TrackDocument extends mongoose.Document {
     title: string;
     spotifyId: string;
     description: string;
@@ -20,7 +20,7 @@ export interface SongDocument extends mongoose.Document {
     likers: mongoose.Types.Array<UserDocument['_id']>;
 }
 
-const SongSchema: mongoose.Schema = new mongoose.Schema({
+const TrackSchema: mongoose.Schema = new mongoose.Schema({
     title: {
         type: String,
         required: true,
@@ -64,7 +64,7 @@ const SongSchema: mongoose.Schema = new mongoose.Schema({
     likers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 });
 
-export interface SongObject {
+export interface TrackObject {
     id: string;
     title: string;
     spotifyId: string;
@@ -80,10 +80,10 @@ export interface SongObject {
     likers: string[];
 }
 
-SongSchema.set('toObject', {
+TrackSchema.set('toObject', {
     versionKey: false,
     virtuals: true,
-    transform: (doc: SongDocument, ret) => {
+    transform: (doc: TrackDocument, ret) => {
         ret.id = ret._id.toString();
         delete ret._id;
         _.forEach(
@@ -110,4 +110,4 @@ SongSchema.set('toObject', {
 
 // TODO: Add JSON once you implement caching.
 
-export const SongModel: mongoose.Model<SongDocument> = mongoose.model<SongDocument>('Song', SongSchema);
+export const TrackModel: mongoose.Model<TrackDocument> = mongoose.model<TrackDocument>('Track', TrackSchema);

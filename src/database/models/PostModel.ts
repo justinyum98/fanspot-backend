@@ -2,12 +2,12 @@ import mongoose from 'mongoose';
 import { UserDocument } from './UserModel';
 import { ArtistDocument } from './ArtistModel';
 import { AlbumDocument } from './AlbumModel';
-import { SongDocument } from './SongModel';
+import { TrackDocument } from './TrackModel';
 
 export enum PostType {
     Artist = 'ARTIST',
     Album = 'ALBUM',
-    Song = 'SONG',
+    Track = 'TRACK',
 }
 
 export enum ContentType {
@@ -25,7 +25,7 @@ export interface PostDocument extends mongoose.Document {
     postType: PostType;
     artist: ArtistDocument['_id'];
     album: AlbumDocument['_id'];
-    song: SongDocument['_id'];
+    track: TrackDocument['_id'];
     contentType: ContentType;
     content: string;
     createdAt: Date;
@@ -55,7 +55,7 @@ const PostSchema: mongoose.Schema = new mongoose.Schema(
         postType: {
             type: String,
             required: true,
-            enum: ['ARTIST', 'ALBUM', 'SONG'],
+            enum: ['ARTIST', 'ALBUM', 'TRACK'],
         },
         artist: {
             type: mongoose.Schema.Types.ObjectId,
@@ -67,9 +67,9 @@ const PostSchema: mongoose.Schema = new mongoose.Schema(
             ref: 'Album',
             default: null,
         },
-        song: {
+        track: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Song',
+            ref: 'Track',
             default: null,
         },
         contentType: {
@@ -96,7 +96,7 @@ export interface PostObject {
     postType?: string;
     artist?: string;
     album?: string;
-    song?: string;
+    track?: string;
     contentType?: string;
     content?: string;
     createdAt?: Date;
@@ -126,8 +126,8 @@ PostSchema.set('toObject', {
         if (ret.album) {
             ret.album = ret.album.toString();
         }
-        if (ret.song) {
-            ret.song = ret.song.toString();
+        if (ret.track) {
+            ret.track = ret.track.toString();
         }
     },
 });

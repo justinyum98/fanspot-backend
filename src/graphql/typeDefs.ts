@@ -48,7 +48,7 @@ export const typeDefs = gql`
         coverArtUrl: URL
         albumType: AlbumType!
         artists: [ID!]! # ids of Artists
-        tracks: [ID!]! # ids of Songs
+        tracks: [ID!]! # ids of Tracks
         releaseDate: DateTime!
         posts: [ID!]! # ids of Posts
         likes: Int!
@@ -60,8 +60,8 @@ export const typeDefs = gql`
         single
     }
 
-    ### SONG ###
-    type Song {
+    ### TRACK ###
+    type Track {
         id: ID!
         title: String!
         spotifyId: String
@@ -87,6 +87,9 @@ export const typeDefs = gql`
         likers: [ID!]! # ids of Users
         dislikers: [ID!]! #ids of Users
         postType: PostType!
+        artist: ID # id of Artist
+        album: ID # id of Album
+        track: ID # id of Track
         contentType: ContentType!
         content: String! # Either plaintext of Markdown OR media url
         createdAt: DateTime!
@@ -96,7 +99,7 @@ export const typeDefs = gql`
     enum PostType {
         ARTIST
         ALBUM
-        SONG
+        TRACK
     }
 
     enum ContentType {

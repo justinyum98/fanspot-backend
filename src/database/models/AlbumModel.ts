@@ -55,7 +55,7 @@ const AlbumSchema: mongoose.Schema = new mongoose.Schema({
     likers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 });
 
-export interface ArtistObject {
+export interface AlbumObject {
     id: string;
     title: string;
     spotifyId: string;

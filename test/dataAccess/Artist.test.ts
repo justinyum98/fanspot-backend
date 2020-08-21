@@ -32,6 +32,7 @@ describe('Artist data access functions', () => {
         const artistObj: ArtistObject = artistDoc.toObject();
 
         expect(artistObj.id).toEqual(artistObjectId);
+        expect(artistObj.name).toEqual(artistName);
     });
 
     it('can find an Artist by Spotify ID', async () => {
@@ -41,5 +42,6 @@ describe('Artist data access functions', () => {
         const artistObj: ArtistObject = artistDoc.toObject();
 
         expect(artistObj.spotifyId).toEqual(artistSpotifyId);
+        expect(artistObj.name).toEqual('21 Savage');
     });
 });

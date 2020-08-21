@@ -1,7 +1,7 @@
 import mongoose = require('mongoose');
 import faker = require('faker');
 import { connectDatabase, closeDatabase } from '../../src/database';
-import { UserDocument, UserObject } from '../../src/database/models/UserModel';
+import { UserModel, UserDocument, UserObject } from '../../src/database/models/UserModel';
 import { findUserById, createUser, followUser, unfollowUser } from '../../src/database/dataAccess/User';
 import { validatePasswordMatch } from '../../src/utils/password';
 
@@ -15,7 +15,7 @@ describe('User data access methods', () => {
     });
 
     afterAll(async () => {
-        await connection.dropDatabase();
+        await UserModel.deleteMany({}).exec();
         await closeDatabase(connection);
     });
 

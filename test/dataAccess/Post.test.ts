@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 import faker from 'faker';
 import { connectDatabase, closeDatabase } from '../../src/database';
-import { UserDocument, UserObject } from '../../src/database/models/UserModel';
+import { UserModel, UserDocument, UserObject } from '../../src/database/models/UserModel';
 import { createUser } from '../../src/database/dataAccess/User';
-import { PostDocument, PostObject } from '../../src/database/models/PostModel';
+import { PostModel, PostDocument, PostObject } from '../../src/database/models/PostModel';
 import { createPost, findPostById, deletePostById } from '../../src/database/dataAccess/Post';
 
 describe('Post data access methods', () => {
@@ -17,7 +17,8 @@ describe('Post data access methods', () => {
     });
 
     afterAll(async () => {
-        await connection.dropDatabase();
+        await UserModel.deleteMany({}).exec();
+        await PostModel.deleteMany({}).exec();
         await closeDatabase(connection);
     });
 

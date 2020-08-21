@@ -86,6 +86,7 @@ TrackSchema.set('toObject', {
     transform: (doc: TrackDocument, ret) => {
         ret.id = ret._id.toString();
         delete ret._id;
+        ret.album = ret.album ? ret.album.toString() : null;
         _.forEach(
             ret.artists,
             (artistId: mongoose.Types.ObjectId, index: number, artists: Array<mongoose.Types.ObjectId | string>) => {

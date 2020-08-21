@@ -3,12 +3,10 @@ import { gql, ApolloServer } from 'apollo-server-express';
 import mongoose from 'mongoose';
 import { createTestServer } from '../../src/graphql';
 import { connectDatabase, closeDatabase } from '../../src/database';
-// TODO: Solve ioredis / Redis connection error
-// import { getCachedUser, closeRedis } from '../../src/redis/actions';
 import { verifyJWT } from '../../src/utils/jwt';
 import { validatePasswordMatch } from '../../src/utils/password';
 import { findUserById, createUser } from '../../src/database/dataAccess/User';
-import { UserDocument } from '../../src/database/models/UserModel';
+import { UserModel, UserDocument } from '../../src/database/models/UserModel';
 import { AuthPayload } from '../../src/graphql/types';
 
 const LOGIN_USER = gql`
@@ -69,14 +67,12 @@ describe('Authentication feature', () => {
     });
 
     afterAll(async () => {
-        // await closeRedis();
-        await connection.dropDatabase();
         await closeDatabase(connection);
     });
 
     describe('Register', () => {
-        beforeAll(async () => {
-            await connection.dropDatabase();
+        afterAll(async () => {
+            await UserModel.deleteMany({}).exec();
         });
 
         it('can successfully register a new user', async () => {
@@ -178,13 +174,16 @@ describe('Authentication feature', () => {
         let userDocument: UserDocument;
 
         beforeAll(async () => {
-            await connection.dropDatabase();
             mockUser = {
                 username: 'testuser123',
                 password: 'password',
                 email: 'testuser123@email.com',
             };
             userDocument = await createUser(mockUser.username, mockUser.password, mockUser.email);
+        });
+
+        afterAll(async () => {
+            await UserModel.deleteMany({}).exec();
         });
 
         it('can login a user with a username and password', async () => {

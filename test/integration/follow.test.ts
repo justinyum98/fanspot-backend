@@ -5,8 +5,7 @@ import { gql, ApolloServer } from 'apollo-server-express';
 import { createTestServer } from '../../src/graphql';
 import { Follower, FollowMutationPayload } from '../../src/graphql/types';
 import { connectDatabase, closeDatabase } from '../../src/database';
-import { UserDocument } from '../../src/database/models/UserModel';
-import { closeRedis } from '../../src/redis/actions';
+import { UserModel, UserDocument } from '../../src/database/models/UserModel';
 import { generateJWT } from '../../src/utils/jwt';
 import { createUser, findUserById } from '../../src/database/dataAccess/User';
 
@@ -18,8 +17,6 @@ describe('Follow feature', () => {
     });
 
     afterAll(async () => {
-        await closeRedis();
-        await connection.dropDatabase();
         await closeDatabase(connection);
     });
 
@@ -60,13 +57,13 @@ describe('Follow feature', () => {
             client = createTestClient(server);
         });
 
+        afterAll(async () => {
+            await UserModel.deleteMany({}).exec();
+        });
+
         beforeEach(async () => {
             currentUser = await findUserById(currentUser.id);
             targetUser = await findUserById(targetUser.id);
-        });
-
-        afterAll(async () => {
-            await connection.dropDatabase();
         });
 
         it('can follow another user', async () => {
@@ -201,7 +198,7 @@ describe('Follow feature', () => {
         });
 
         afterAll(async () => {
-            await connection.dropDatabase();
+            await UserModel.deleteMany({}).exec();
         });
 
         it("can get current user's list of followers", async () => {

@@ -4,9 +4,9 @@ import { createTestClient, ApolloServerTestClient } from 'apollo-server-testing'
 import { gql, ApolloServer } from 'apollo-server-express';
 import { createTestServer } from '../../src/graphql';
 import { connectDatabase, closeDatabase } from '../../src/database';
-import { UserDocument } from '../../src/database/models/UserModel';
+import { UserModel, UserDocument } from '../../src/database/models/UserModel';
 import { createUser, findUserById } from '../../src/database/dataAccess/User';
-import { PostDocument, PostObject, PostType, ContentType } from '../../src/database/models/PostModel';
+import { PostModel, PostDocument, PostObject, PostType, ContentType } from '../../src/database/models/PostModel';
 import { findPostById, createPost } from '../../src/database/dataAccess/Post';
 import { generateJWT } from '../../src/utils/jwt';
 import { CreatePostMutationResponse, DeletePostMutationResponse } from '../../src/graphql/types';
@@ -19,7 +19,8 @@ describe('Post feature', () => {
     });
 
     afterAll(async () => {
-        await connection.dropDatabase();
+        await UserModel.deleteMany({}).exec();
+        await PostModel.deleteMany({}).exec();
         await closeDatabase(connection);
     });
 
@@ -41,7 +42,8 @@ describe('Post feature', () => {
         });
 
         afterAll(async () => {
-            await connection.dropDatabase();
+            await connection.dropCollection('users');
+            await connection.dropCollection('posts');
         });
 
         const CREATE_POST = gql`

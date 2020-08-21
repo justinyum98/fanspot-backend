@@ -71,7 +71,7 @@ ArtistSchema.set('toObject', {
     transform: (doc: ArtistDocument, ret) => {
         ret.id = ret._id.toString();
         delete ret._id;
-        ret.user = ret.user.toString();
+        ret.user = ret.user ? ret.user.toString() : null;
         _.forEach(
             ret.albums,
             (albumId: mongoose.Types.ObjectId, index: number, albums: Array<mongoose.Types.ObjectId | string>) => {

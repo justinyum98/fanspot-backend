@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { connectDatabase, closeDatabase } from '../../src/database';
-import { AlbumDocument, AlbumObject } from '../../src/database/models/AlbumModel';
+import { AlbumDocument } from '../../src/database/models/AlbumModel';
 import { findAlbumById, findAlbumByTitle, findAlbumBySpotifyId } from '../../src/database/dataAccess/Album';
 
 describe('Album data access functions', () => {

@@ -1,4 +1,3 @@
-import mongoose from 'mongoose';
 import { AuthenticationError } from 'apollo-server-express';
 import { AuthPayload, FollowMutationPayload, CreatePostMutationResponse, DeletePostMutationResponse } from '../types';
 import { UserDocument } from '../../database/models/UserModel';
@@ -10,24 +9,24 @@ import {
     followUser,
     unfollowUser,
 } from '../../database/dataAccess/User';
-import { PostDocument, PostObject, PostType, ContentType } from '../../database/models/PostModel';
+import { PostDocument } from '../../database/models/PostModel';
 import { createPost, findPostById, deletePostById } from '../../database/dataAccess/Post';
 import { generateJWT, verifyJWT } from '../../utils/jwt';
 import { validatePasswordMatch } from '../../utils/password';
-// import { cacheUser } from '../../redis/actions';
 import NotFoundError from '../../errors/NotFoundError';
 import NotAuthorizedError from '../../errors/NotAuthorizedError';
+import logger from '../../utils/logger';
 
 export const Mutation = {
     Mutation: {
         // Public
         login: async (parent: any, args: { username: string; password: string }): Promise<AuthPayload> => {
+            logger.debug(`Login Request: ${args.username} ${args.password}`);
             const user: UserDocument = await findUserByUsername(args.username);
             if (!user) throw new NotFoundError('User with username');
             const passwordsMatch = await validatePasswordMatch(args.password, user.password);
+            logger.debug(`Password match: ${passwordsMatch}`);
             if (!passwordsMatch) throw new AuthenticationError('Password is incorrect.');
-            // TODO: Fix cache connection issue (https://trello.com/c/tVg1ofq4)
-            // await cacheUser(user);
             const token: string = generateJWT(user.id, user.username);
             return { user: user.toObject(), token };
         },
@@ -40,7 +39,6 @@ export const Mutation = {
             user = await findUserByEmail(args.email);
             if (user) throw new AuthenticationError('Email is taken.');
             const newUser: UserDocument = await createUser(args.username, args.password, args.email);
-            // await cacheUser(newUser);
             const token: string = generateJWT(newUser.id, newUser.username);
             return { user: newUser.toObject(), token };
         },

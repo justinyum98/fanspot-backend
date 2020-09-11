@@ -1,6 +1,14 @@
 import { UserObject } from '../database/models/UserModel';
 import { PostObject } from '../database/models/PostModel';
 
+export interface SearchResult {
+    id: string;
+    name: string;
+    author: string | null;
+    pictureUrl: string | null;
+    type: 'user' | 'artist' | 'album' | 'track' | 'post';
+}
+
 export interface Follower {
     id: string;
     username: string;

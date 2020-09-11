@@ -24,14 +24,11 @@ describe('Search feature', () => {
         let server: ApolloServer;
         let client: ApolloServerTestClient;
         let fakeUsers: Array<UserDocument>;
-        const fakePosts: Array<PostDocument> = [];
+        let fakePost: PostDocument;
 
         beforeAll(async () => {
             fakeUsers = await createMultipleFakeUsers(3);
-            fakeUsers.forEach(async (fakeUser) => {
-                const fakePost = await createFakePost(fakeUser.id);
-                fakePosts.push(fakePost);
-            });
+            fakePost = await createFakePost(fakeUsers[0].id);
             server = createTestServer();
             client = createTestClient(server);
         });
@@ -46,6 +43,7 @@ describe('Search feature', () => {
                 search(queryStr: $queryStr) {
                     id
                     name
+                    author
                     pictureUrl
                     type
                 }
@@ -67,13 +65,13 @@ describe('Search feature', () => {
             expect(payload.length).toEqual(1);
             expect(payload[0].id).toEqual(fakeUser.id);
             expect(payload[0].name).toEqual(fakeUser.username);
+            expect(payload[0].author).toBeNull();
             expect(payload[0].pictureUrl).toEqual(fakeUser.profilePictureUrl);
             expect(payload[0].type).toEqual('user');
         });
 
         it('should be able to search for posts', async () => {
             // Arrange
-            const fakePost = fakePosts[0];
 
             // Act
             const res = await client.query({
@@ -86,8 +84,71 @@ describe('Search feature', () => {
             expect(payload.length).toEqual(1);
             expect(payload[0].id).toEqual(fakePost.id);
             expect(payload[0].name).toEqual(fakePost.title);
-            expect(payload[0].pictureUrl).toEqual(null);
+            expect(payload[0].author).toEqual(fakeUsers[0].username);
+            expect(payload[0].pictureUrl).toBeNull();
             expect(payload[0].type).toEqual('post');
+        });
+
+        it('should be able to search for artists', async () => {
+            // Arrange
+            const artistName = '21 Savage';
+
+            // Act
+            const res = await client.query({
+                query: SEARCH,
+                variables: { queryStr: artistName },
+            });
+            const payload = res.data.search;
+
+            // Assert
+            expect(payload.length).toEqual(32);
+            expect(payload[0].id).toBeDefined();
+            expect(payload[0].name).toEqual(artistName);
+            expect(payload[0].author).toBeNull();
+            expect(payload[0].pictureUrl).toBeDefined();
+            expect(payload[0].type).toEqual('artist');
+        });
+
+        it('should be able to search for albums', async () => {
+            // Arrange
+            const albumName = 'i am > i was';
+
+            // Act
+            const res = await client.query({
+                query: SEARCH,
+                variables: { queryStr: albumName },
+            });
+            const payload = res.data.search;
+
+            // Assert
+            // "3" because there's the deluxe and non-explicit versions.
+            expect(payload.length).toEqual(3);
+            expect(payload[0].id).toBeDefined();
+            expect(payload[0].name).toEqual(albumName + ' (Deluxe)');
+            expect(payload[0].author).toEqual('21 Savage');
+            expect(payload[0].pictureUrl).toBeDefined();
+            expect(payload[0].type).toEqual('album');
+        });
+
+        it('should be able to search for various entries', async () => {
+            // Arrange
+            const trackName = 'a lot';
+
+            // Act
+            const res = await client.query({
+                query: SEARCH,
+                variables: { queryStr: trackName },
+            });
+            const payload = res.data.search;
+
+            // Assert
+            // "6" because there's a lot of entities with "a lot" (case-insensitive) in them.
+            expect(payload.length).toEqual(7);
+            expect(payload[0].id).toBeDefined();
+            expect(payload[0].name).toEqual('Been Thru a Lot');
+            expect(payload[0].author).toEqual('Young Thug');
+            expect(payload[0].pictureUrl).toBeDefined();
+            expect(payload[0].type).toEqual('album');
         });
     });
 });

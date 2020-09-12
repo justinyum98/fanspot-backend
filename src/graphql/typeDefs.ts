@@ -96,14 +96,14 @@ export const typeDefs = gql`
     }
 
     enum PostType {
-        ARTIST
-        ALBUM
-        TRACK
+        artist
+        album
+        track
     }
 
     enum ContentType {
-        TEXT
-        MEDIA
+        text
+        media
     }
 
     ### QUERY ###
@@ -138,6 +138,7 @@ export const typeDefs = gql`
         createPost(
             title: String!
             postType: PostType!
+            entityId: ID!
             contentType: ContentType!
             content: String!
         ): CreatePostMutationResponse

@@ -4,17 +4,6 @@ import { ArtistDocument } from './ArtistModel';
 import { AlbumDocument } from './AlbumModel';
 import { TrackDocument } from './TrackModel';
 
-export enum PostType {
-    Artist = 'ARTIST',
-    Album = 'ALBUM',
-    Track = 'TRACK',
-}
-
-export enum ContentType {
-    Text = 'TEXT',
-    Media = 'MEDIA',
-}
-
 export interface PostDocument extends mongoose.Document {
     poster: UserDocument['_id'];
     title: string;
@@ -22,11 +11,11 @@ export interface PostDocument extends mongoose.Document {
     dislikes: number;
     likers: mongoose.Types.Array<UserDocument['_id']>;
     dislikers: mongoose.Types.Array<UserDocument['_id']>;
-    postType: PostType;
+    postType: 'artist' | 'album' | 'track';
     artist: ArtistDocument['_id'];
     album: AlbumDocument['_id'];
     track: TrackDocument['_id'];
-    contentType: ContentType;
+    contentType: 'text' | 'media';
     content: string;
     createdAt: Date;
     updatedAt: Date;
@@ -55,7 +44,7 @@ const PostSchema: mongoose.Schema = new mongoose.Schema(
         postType: {
             type: String,
             required: true,
-            enum: ['ARTIST', 'ALBUM', 'TRACK'],
+            enum: ['artist', 'album', 'track'],
         },
         artist: {
             type: mongoose.Schema.Types.ObjectId,
@@ -75,7 +64,7 @@ const PostSchema: mongoose.Schema = new mongoose.Schema(
         contentType: {
             type: String,
             required: true,
-            enum: ['TEXT', 'MEDIA'],
+            enum: ['text', 'media'],
         },
         content: {
             type: String,

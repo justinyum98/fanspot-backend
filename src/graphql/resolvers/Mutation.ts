@@ -78,8 +78,8 @@ export const Mutation = {
             };
         },
         createPost: async (
-            parent: any,
-            args: { title: string; postType: string; contentType: string; content: string },
+            parent: unknown,
+            args: { title: string; postType: string; entityId: string; contentType: string; content: string },
             context: { token: string },
         ): Promise<CreatePostMutationResponse> => {
             const decodedToken = verifyJWT(context.token);
@@ -87,6 +87,7 @@ export const Mutation = {
                 decodedToken.id,
                 args.title,
                 args.postType,
+                args.entityId,
                 args.contentType,
                 args.content,
             );
@@ -105,7 +106,7 @@ export const Mutation = {
          * @returns Promise of DeletePostMutationResponse
          */
         deletePost: async (
-            parent: any,
+            parent: unknown,
             args: { postId: string },
             context: { token: string },
         ): Promise<DeletePostMutationResponse> => {
@@ -121,18 +122,8 @@ export const Mutation = {
             if (post.poster.toString() !== currentUser.id) throw new NotAuthorizedError('delete post');
             if (!currentUser.posts.includes(post.id)) throw new NotAuthorizedError('delete post');
 
-            // Delete the post by
-            try {
-                // (1) Remove the post id from user's "posts"
-                currentUser.posts.pull(post.id);
-                await currentUser.save();
-
-                // TODO: Once you add 'Artist', 'Album', and 'Song', remove post from their respective 'posts' according to type.
-            } catch (error) {
-                throw error;
-            }
-            // (2) Delete the post from database
-            const deletedPostId = await deletePostById(post.id);
+            // Delete the post.
+            const [deletedPostId] = await deletePostById(post.id);
             return {
                 code: '200',
                 success: true,

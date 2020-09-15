@@ -1,6 +1,7 @@
 import mongoose = require('mongoose');
 import { PostDocument } from './PostModel';
 import { ArtistDocument } from './ArtistModel';
+import { CommentDocument } from './CommentModel';
 
 export interface Privacy {
     follow: boolean;
@@ -17,6 +18,7 @@ export interface UserDocument extends mongoose.Document {
     followers: mongoose.Types.Array<UserDocument['_id']>;
     following: mongoose.Types.Array<UserDocument['_id']>;
     posts: mongoose.Types.Array<PostDocument['_id']>;
+    comments: mongoose.Types.Array<CommentDocument['_id']>;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -60,6 +62,7 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
         followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
         following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
         posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+        comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
     },
     { timestamps: true },
 );
@@ -76,6 +79,7 @@ export interface UserObject {
     followers?: string[];
     following?: string[];
     posts?: string[];
+    comments?: string[];
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -105,6 +109,7 @@ UserSchema.set('toObject', {
                 posts[index] = postId.toString();
             },
         );
+        ret.comments = ret.comments.map((commentId: mongoose.Types.ObjectId) => commentId.toString());
     },
 });
 

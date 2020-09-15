@@ -89,6 +89,7 @@ describe('Post feature', () => {
                         track
                         contentType
                         content
+                        comments
                         createdAt
                         updatedAt
                     }
@@ -112,6 +113,7 @@ describe('Post feature', () => {
                     track
                     contentType
                     content
+                    comments
                     createdAt
                     updatedAt
                 }
@@ -134,6 +136,7 @@ describe('Post feature', () => {
                     track
                     contentType
                     content
+                    comments
                     createdAt
                     updatedAt
                 }
@@ -167,7 +170,6 @@ describe('Post feature', () => {
                 mutation: CREATE_POST,
                 variables: { ...requiredData },
             });
-            console.log('create post', res);
             const payload = res.data.createPost;
             // Retrieve updated current user and actual post
             currentUser = await findUserById(currentUser.id);
@@ -195,6 +197,7 @@ describe('Post feature', () => {
                     track: null,
                     contentType: requiredData.contentType,
                     content: requiredData.content,
+                    comments: [],
                     createdAt: postObj.createdAt,
                     updatedAt: postObj.updatedAt,
                 },

@@ -3,6 +3,7 @@ import { UserDocument } from './UserModel';
 import { ArtistDocument } from './ArtistModel';
 import { AlbumDocument } from './AlbumModel';
 import { TrackDocument } from './TrackModel';
+import { CommentDocument } from './CommentModel';
 
 export interface PostDocument extends mongoose.Document {
     poster: UserDocument['_id'];
@@ -17,6 +18,7 @@ export interface PostDocument extends mongoose.Document {
     track: TrackDocument['_id'];
     contentType: 'text' | 'media';
     content: string;
+    comments: mongoose.Types.Array<CommentDocument['_id']>;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -70,6 +72,7 @@ const PostSchema: mongoose.Schema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
     },
     { timestamps: true },
 );
@@ -88,6 +91,7 @@ export interface PostObject {
     track?: string;
     contentType?: string;
     content?: string;
+    comments?: string[];
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -118,6 +122,7 @@ PostSchema.set('toObject', {
         if (ret.track) {
             ret.track = ret.track.toString();
         }
+        ret.comments = ret.comments.map((commentId: mongoose.Types.ObjectId) => commentId.toString());
     },
 });
 

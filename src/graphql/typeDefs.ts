@@ -14,6 +14,7 @@ export const typeDefs = gql`
         followers: [ID!]! # ids of Users
         following: [ID!]! # ids of Users
         posts: [ID!]! # ids of Posts
+        comments: [ID!]! # ids of Comments
         createdAt: DateTime!
         updatedAt: DateTime!
     }
@@ -91,6 +92,7 @@ export const typeDefs = gql`
         track: ID # id of Track
         contentType: ContentType!
         content: String! # Either plaintext of Markdown OR media url
+        comments: [ID!]!
         createdAt: DateTime!
         updatedAt: DateTime!
     }

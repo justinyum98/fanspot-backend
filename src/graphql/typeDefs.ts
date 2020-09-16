@@ -108,6 +108,23 @@ export const typeDefs = gql`
         media
     }
 
+    ### COMMENT ###
+    type Comment {
+        id: ID!
+        post: ID!
+        poster: ID!
+        content: String!
+        likes: Int!
+        dislikes: Int!
+        likers: [ID!]!
+        dislikers: [ID!]!
+        parent: ID
+        children: [ID!]!
+        isDeleted: Boolean!
+        createdAt: DateTime!
+        updatedAt: DateTime!
+    }
+
     ### QUERY ###
     type Query {
         # Public
@@ -135,8 +152,11 @@ export const typeDefs = gql`
         register(username: String!, password: String!, email: EmailAddress!): AuthPayload
 
         # Private (requires token)
+        ## Follow
         follow(targetUserId: ID!): FollowMutationPayload
         unfollow(targetUserId: ID!): FollowMutationPayload
+
+        ## Post
         createPost(
             title: String!
             postType: PostType!
@@ -145,6 +165,10 @@ export const typeDefs = gql`
             content: String!
         ): CreatePostMutationResponse
         deletePost(postId: ID!): DeletePostMutationResponse
+
+        ## Comment
+        addComment(postId: ID!, content: String!, parentId: ID): AddCommentMutationResponse
+        deleteComment(commentId: ID!): DeleteCommentMutationResponse
     }
 
     interface MutationResponse {
@@ -176,5 +200,19 @@ export const typeDefs = gql`
         success: Boolean!
         message: String!
         deletedPostId: ID!
+    }
+
+    type AddCommentMutationResponse implements MutationResponse {
+        code: String!
+        success: Boolean!
+        message: String!
+        comment: Comment
+    }
+
+    type DeleteCommentMutationResponse implements MutationResponse {
+        code: String!
+        success: Boolean!
+        message: String!
+        deletedCommentId: ID
     }
 `;

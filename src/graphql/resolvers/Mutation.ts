@@ -1,5 +1,12 @@
 import { AuthenticationError } from 'apollo-server-express';
-import { AuthPayload, FollowMutationPayload, CreatePostMutationResponse, DeletePostMutationResponse } from '../types';
+import {
+    AuthPayload,
+    FollowMutationPayload,
+    CreatePostMutationResponse,
+    DeletePostMutationResponse,
+    AddCommentMutationResponse,
+    DeleteCommentMutationResponse,
+} from '../types';
 import { UserDocument } from '../../database/models/UserModel';
 import {
     findUserById,
@@ -16,6 +23,9 @@ import { validatePasswordMatch } from '../../utils/password';
 import NotFoundError from '../../errors/NotFoundError';
 import NotAuthorizedError from '../../errors/NotAuthorizedError';
 import logger from '../../utils/logger';
+import { createComment, deleteComment } from '../../database/dataAccess/Comment';
+import { CommentDocument } from '../../database/models/CommentModel';
+import ConflictError from '../../errors/ConflictError';
 
 export const Mutation = {
     Mutation: {
@@ -129,6 +139,89 @@ export const Mutation = {
                 success: true,
                 message: 'Post successfully deleted.',
                 deletedPostId,
+            };
+        },
+        addComment: async (
+            parent: unknown,
+            args: { postId: string; content: string; parentId?: string },
+            context: { token: string },
+        ): Promise<AddCommentMutationResponse> => {
+            // Verify user.
+            const decodedToken = verifyJWT(context.token);
+            const currentUser = await findUserById(decodedToken.id);
+
+            // Create the comment.
+            let comment: CommentDocument;
+
+            try {
+                const [newComment] = await createComment(args.postId, currentUser.id, args.content, args.parentId);
+                comment = newComment;
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        comment: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+
+            return {
+                code: '201',
+                success: true,
+                message: 'Successfully created comment.',
+                comment: comment.toObject(),
+            };
+        },
+        deleteComment: async (
+            parent: unknown,
+            args: { commentId: string },
+            context: { token: string },
+        ): Promise<DeleteCommentMutationResponse> => {
+            // Verify user.
+            const decodedToken = verifyJWT(context.token);
+            const currentUser = await findUserById(decodedToken.id);
+
+            // Delete the comment.
+            let deletedComment: CommentDocument;
+
+            try {
+                deletedComment = await deleteComment(args.commentId, currentUser.id);
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        deletedCommentId: null,
+                    };
+                } else if (error instanceof NotAuthorizedError) {
+                    return {
+                        code: '403',
+                        success: false,
+                        message: error.toString(),
+                        deletedCommentId: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        deletedCommentId: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+
+            return {
+                code: '200',
+                success: true,
+                message: 'Successfully deleted comment.',
+                deletedCommentId: deletedComment.id,
             };
         },
     },

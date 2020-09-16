@@ -1,5 +1,6 @@
 import { UserObject } from '../database/models/UserModel';
 import { PostObject } from '../database/models/PostModel';
+import { CommentObject } from '../database/models/CommentModel';
 
 export interface Follower {
     id: string;
@@ -30,4 +31,12 @@ export interface CreatePostMutationResponse extends MutationResponse {
 
 export interface DeletePostMutationResponse extends MutationResponse {
     deletedPostId: string;
+}
+
+export interface AddCommentMutationResponse extends MutationResponse {
+    comment: CommentObject;
+}
+
+export interface DeleteCommentMutationResponse extends MutationResponse {
+    deletedCommentId: string;
 }

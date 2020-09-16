@@ -5,6 +5,7 @@ import { findPostById } from './Post';
 import NotFoundError from '../../errors/NotFoundError';
 import { findUserById } from './User';
 import NotAuthorizedError from '../../errors/NotAuthorizedError';
+import ConflictError from '../../errors/ConflictError';
 
 /**
  * Finds a comment by ID.
@@ -110,13 +111,13 @@ export async function deleteComment(
         if (comment.poster.toString() !== commenter.id) throw new NotAuthorizedError('delete comment');
 
         // Verify that the comment isn't already deleted.
-        if (comment.isDeleted) throw new Error('comment already deleted');
+        if (comment.isDeleted) throw new ConflictError('Comment already deleted.');
 
         // Delete the comment.
         comment.isDeleted = true;
 
         // Save the changes.
-        comment.save();
+        await comment.save();
     } catch (error) {
         throw error;
     }

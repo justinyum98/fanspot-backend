@@ -134,15 +134,32 @@ export const typeDefs = gql`
         getUserPosts(userId: ID!): [Post!]!
 
         # Private (requires token)
+        ## User
         getCurrentUserFollowers: [Follower!]!
         getCurrentUserFollowing: [Follower!]!
         getCurrentUserPosts: [Post!]!
+
+        ## Comment
+        getPostComments(postId: ID!): [PostComment!]!
     }
 
     type Follower {
         id: ID!
         username: String!
         profilePictureUrl: URL
+    }
+
+    type PostComment {
+        id: ID!
+        poster: Follower!
+        content: String!
+        likes: Int!
+        dislikes: Int!
+        parent: ID
+        children: [ID!]!
+        isDeleted: Boolean!
+        createdAt: DateTime!
+        updatedAt: DateTime!
     }
 
     ### MUTATION ###

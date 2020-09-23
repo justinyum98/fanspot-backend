@@ -94,22 +94,18 @@ UserSchema.set('toObject', {
         if (ret.artist) {
             ret.artist = ret.artist.toString();
         }
-        ret.following.forEach(
-            (userId: mongoose.Types.ObjectId, index: number, following: Array<mongoose.Types.ObjectId | string>) => {
-                following[index] = userId.toString();
-            },
-        );
-        ret.followers.forEach(
-            (userId: mongoose.Types.ObjectId, index: number, followers: Array<mongoose.Types.ObjectId | string>) => {
-                followers[index] = userId.toString();
-            },
-        );
-        ret.posts.forEach(
-            (postId: mongoose.Types.ObjectId, index: number, posts: Array<mongoose.Types.ObjectId | string>) => {
-                posts[index] = postId.toString();
-            },
-        );
-        ret.comments = ret.comments.map((commentId: mongoose.Types.ObjectId) => commentId.toString());
+        if (ret.following) {
+            ret.following = ret.following.map((userId: mongoose.Types.ObjectId) => userId.toString());
+        }
+        if (ret.followers) {
+            ret.followers = ret.followers.map((userId: mongoose.Types.ObjectId) => userId.toString());
+        }
+        if (ret.posts) {
+            ret.posts = ret.posts.map((postId: mongoose.Types.ObjectId) => postId.toString());
+        }
+        if (ret.comments) {
+            ret.comments = ret.comments.map((commentId: mongoose.Types.ObjectId) => commentId.toString());
+        }
     },
 });
 

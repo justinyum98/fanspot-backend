@@ -8,6 +8,19 @@ export interface Follower {
     profilePictureUrl: string;
 }
 
+export interface PostComment {
+    id: string;
+    poster: Follower;
+    content: string;
+    likes: number;
+    dislikes: number;
+    parent: string;
+    children: string[];
+    isDeleted: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
 // Mutation
 export interface MutationResponse {
     code: string;

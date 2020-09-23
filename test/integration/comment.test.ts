@@ -226,7 +226,6 @@ describe('Comment feature', () => {
                 commentId,
             },
         });
-        console.log(res);
         const payload = res.data.deleteComment;
         parentComment = await findCommentById(commentId);
 
@@ -240,5 +239,41 @@ describe('Comment feature', () => {
         expect(payload).toMatchObject(expectedPayload);
         expect(parentComment).toBeDefined();
         expect(parentComment.isDeleted).toEqual(true);
+    });
+
+    const GET_POST_COMMENTS = gql`
+        query GetPostComments($postId: ID!) {
+            getPostComments(postId: $postId) {
+                id
+                poster {
+                    id
+                    username
+                    profilePictureUrl
+                }
+                content
+                likes
+                dislikes
+                parent
+                children
+                isDeleted
+                createdAt
+                updatedAt
+            }
+        }
+    `;
+
+    it("can get a post's comments", async () => {
+        // ARRANGE
+        const postId = postDoc.id;
+
+        // ACT
+        const res = await client.query({
+            query: GET_POST_COMMENTS,
+            variables: { postId },
+        });
+        const payload = res.data.getPostComments;
+
+        // ASSERT
+        expect(payload.length).toEqual(3);
     });
 });

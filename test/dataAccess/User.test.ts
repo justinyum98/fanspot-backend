@@ -21,12 +21,14 @@ describe('User data access methods', () => {
 
     // Tests rely on each other
     it('can create a new User', async () => {
+        // ARRANGE
         const requiredData = {
             username: faker.internet.userName(),
             password: faker.internet.password(),
             email: faker.internet.email(),
         };
 
+        // ACT
         currentUser = await createUser(requiredData.username, requiredData.password, requiredData.email);
         const passwordsMatch = await validatePasswordMatch(requiredData.password, currentUser.password);
         const userObject: UserObject = currentUser.toObject();

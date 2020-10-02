@@ -18,6 +18,8 @@ export interface UserDocument extends mongoose.Document {
     followers: mongoose.Types.Array<UserDocument['_id']>;
     following: mongoose.Types.Array<UserDocument['_id']>;
     posts: mongoose.Types.Array<PostDocument['_id']>;
+    likedPosts: mongoose.Types.Array<PostDocument['_id']>;
+    dislikedPosts: mongoose.Types.Array<PostDocument['_id']>;
     comments: mongoose.Types.Array<CommentDocument['_id']>;
     createdAt: Date;
     updatedAt: Date;
@@ -62,6 +64,8 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
         followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
         following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
         posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+        likedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+        dislikedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
         comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
     },
     { timestamps: true },
@@ -79,6 +83,8 @@ export interface UserObject {
     followers?: string[];
     following?: string[];
     posts?: string[];
+    likedPosts?: string[];
+    dislikedPosts?: string[];
     comments?: string[];
     createdAt?: Date;
     updatedAt?: Date;
@@ -103,6 +109,12 @@ UserSchema.set('toObject', {
         if (ret.posts) {
             ret.posts = ret.posts.map((postId: mongoose.Types.ObjectId) => postId.toString());
         }
+        if (ret.likedPosts) {
+            ret.likedPosts = ret.likedPosts.map((postId: mongoose.Types.ObjectId) => postId.toString());
+        }
+        if (ret.dislikedPosts) {
+            ret.dislikedPosts = ret.dislikedPosts.map((postId: mongoose.Types.ObjectId) => postId.toString());
+        }
         if (ret.comments) {
             ret.comments = ret.comments.map((commentId: mongoose.Types.ObjectId) => commentId.toString());
         }
@@ -121,6 +133,7 @@ export interface UserJSON {
     followers?: string[];
     following?: string[];
     posts?: string[];
+    
     createdAt?: string;
     updatedAt?: string;
 }

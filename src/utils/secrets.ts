@@ -22,14 +22,7 @@ if (!prod) {
 
 export const MONGODB_URI = process.env['MONGODB_URI'];
 
-export const REDIS_URL = process.env['REDIS_URL'];
-
 if (!MONGODB_URI) {
     logger.error('No mongo connection string. Set MONGODB_URI environment variable.');
-    process.exit(1);
-}
-
-if (!REDIS_URL) {
-    logger.error('No redis connection string. Set REDIS_URL environment variable.');
     process.exit(1);
 }

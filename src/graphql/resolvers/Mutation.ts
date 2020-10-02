@@ -6,6 +6,7 @@ import {
     DeletePostMutationResponse,
     AddCommentMutationResponse,
     DeleteCommentMutationResponse,
+    LikeOrDislikePostMutationResponse,
 } from '../types';
 import { UserDocument } from '../../database/models/UserModel';
 import {
@@ -15,6 +16,10 @@ import {
     createUser,
     followUser,
     unfollowUser,
+    likePost,
+    dislikePost,
+    undoLikePost,
+    undoDislikePost,
 } from '../../database/dataAccess/User';
 import { PostDocument } from '../../database/models/PostModel';
 import { createPost, findPostById, deletePostById } from '../../database/dataAccess/Post';
@@ -26,6 +31,7 @@ import logger from '../../utils/logger';
 import { createComment, deleteComment } from '../../database/dataAccess/Comment';
 import { CommentDocument } from '../../database/models/CommentModel';
 import ConflictError from '../../errors/ConflictError';
+import NotAuthenticatedError from '../../errors/NotAuthenticatedError';
 
 export const Mutation = {
     Mutation: {
@@ -140,6 +146,123 @@ export const Mutation = {
                 message: 'Post successfully deleted.',
                 deletedPostId,
             };
+        },
+        likeOrDislikePost: async (
+            parent: unknown,
+            args: { postId: string; action: string },
+            context: { token: string },
+        ): Promise<LikeOrDislikePostMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the post exists.
+                let post: PostDocument = await findPostById(args.postId);
+                if (!post) throw new NotFoundError('Post');
+
+                if (args.action === 'like') {
+                    // Like the post.
+                    [currentUser, post] = await likePost(currentUser, post);
+                } else if (args.action === 'dislike') {
+                    // Dislike the post.
+                    [currentUser, post] = await dislikePost(currentUser, post);
+                } else {
+                    throw new Error('Specified action is neither like or dislike.');
+                }
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: `Successfully ${args.action}d the post.`,
+                    postLikes: post.likes,
+                    postDislikes: post.dislikes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        postLikes: null,
+                        postDislikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        postLikes: null,
+                        postDislikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        postLikes: null,
+                        postDislikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        undoLikeOrDislikePost: async (
+            parent: unknown,
+            args: { postId: string; action: string },
+            context: { token: string },
+        ): Promise<LikeOrDislikePostMutationResponse> => {
+            // TODO: Finish implementing.
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the post exists.
+                let post = await findPostById(args.postId);
+                if (!post) throw new NotFoundError('Post');
+
+                if (args.action === 'like') {
+                    // Undo liking the post.
+                    [currentUser, post] = await undoLikePost(currentUser, post);
+                } else if (args.action === 'dislike') {
+                    // Undo disliking the post.
+                    [currentUser, post] = await undoDislikePost(currentUser, post);
+                } else {
+                    throw new Error('Specified action is neither like or dislike.');
+                }
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: `Successfully un${args.action}d the post.`,
+                    postLikes: post.likes,
+                    postDislikes: post.dislikes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        postLikes: null,
+                        postDislikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        postLikes: null,
+                        postDislikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
         },
         addComment: async (
             parent: unknown,

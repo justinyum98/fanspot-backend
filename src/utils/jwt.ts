@@ -1,4 +1,5 @@
 import { sign, verify } from 'jsonwebtoken';
+import NotAuthenticatedError from '../errors/NotAuthenticatedError';
 
 export function generateJWT(id: string, username: string): string {
     return sign(
@@ -19,7 +20,7 @@ export function verifyJWT(token: string): any {
     try {
         decoded = verify(token, process.env.JWT_SECRET);
     } catch (error) {
-        throw error;
+        throw new NotAuthenticatedError(error.message);
     }
     return decoded;
 }

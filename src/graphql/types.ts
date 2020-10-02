@@ -53,3 +53,8 @@ export interface AddCommentMutationResponse extends MutationResponse {
 export interface DeleteCommentMutationResponse extends MutationResponse {
     deletedCommentId: string;
 }
+
+export interface LikeOrDislikePostMutationResponse extends MutationResponse {
+    postLikes: number | null;
+    postDislikes: number | null;
+}

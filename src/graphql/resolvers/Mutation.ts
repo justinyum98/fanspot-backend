@@ -10,6 +10,7 @@ import {
     LikeOrDislikeCommentMutationResponse,
     LikeArtistMutationResponse,
     LikeAlbumMutationResponse,
+    LikeTrackMutationResponse,
 } from '../types';
 import { UserDocument } from '../../database/models/UserModel';
 import {
@@ -31,6 +32,8 @@ import {
     undoLikeArtist,
     likeAlbum,
     undoLikeAlbum,
+    likeTrack,
+    undoLikeTrack,
 } from '../../database/dataAccess/User';
 import { PostDocument } from '../../database/models/PostModel';
 import { createPost, findPostById, deletePostById } from '../../database/dataAccess/Post';
@@ -45,6 +48,7 @@ import ConflictError from '../../errors/ConflictError';
 import NotAuthenticatedError from '../../errors/NotAuthenticatedError';
 import { findArtistById } from '../../database/dataAccess/Artist';
 import { findAlbumById } from '../../database/dataAccess/Album';
+import { findTrackById } from '../../database/dataAccess/Track';
 
 export const Mutation = {
     Mutation: {
@@ -683,6 +687,108 @@ export const Mutation = {
                         success: false,
                         message: error.toString(),
                         albumLikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        likeTrack: async (
+            parent: unknown,
+            args: { trackId: string },
+            context: { token: string },
+        ): Promise<LikeTrackMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the track exists.
+                let track = await findTrackById(args.trackId);
+                if (!track) throw new NotFoundError('Track');
+
+                // Like the track.
+                [currentUser, track] = await likeTrack(currentUser, track);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully liked the track.',
+                    trackLikes: track.likes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        trackLikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        trackLikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        trackLikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        undoLikeTrack: async (
+            parent: unknown,
+            args: { trackId: string },
+            context: { token: string },
+        ): Promise<LikeTrackMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the track exists.
+                let track = await findTrackById(args.trackId);
+                if (!track) throw new NotFoundError('Track');
+
+                // Undo liking the track.
+                [currentUser, track] = await undoLikeTrack(currentUser, track);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully unliked the track.',
+                    trackLikes: track.likes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        trackLikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        trackLikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        trackLikes: null,
                     };
                 } else {
                     throw error;

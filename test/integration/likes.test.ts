@@ -7,6 +7,7 @@ import { findAlbumById } from '../../src/database/dataAccess/Album';
 import { findArtistById } from '../../src/database/dataAccess/Artist';
 import { createComment, findCommentById } from '../../src/database/dataAccess/Comment';
 import { createPost, findPostById } from '../../src/database/dataAccess/Post';
+import { findTrackById } from '../../src/database/dataAccess/Track';
 import { createUser, findUserById } from '../../src/database/dataAccess/User';
 import { AlbumDocument, AlbumModel } from '../../src/database/models/AlbumModel';
 import { ArtistDocument, ArtistModel } from '../../src/database/models/ArtistModel';
@@ -20,6 +21,7 @@ import {
     LikeOrDislikeCommentMutationResponse,
     LikeArtistMutationResponse,
     LikeAlbumMutationResponse,
+    LikeTrackMutationResponse,
 } from '../../src/graphql/types';
 import { generateJWT } from '../../src/utils/jwt';
 
@@ -1084,6 +1086,143 @@ describe('Likes feature', () => {
             expect(currentUser.likedAlbums.length).toEqual(0);
             expect(albumDoc.likes).toEqual(0);
             expect(albumDoc.likers.length).toEqual(0);
+        });
+    });
+
+    describe('Tracks', () => {
+        const LIKE_TRACK = gql`
+            mutation LikeTrack($trackId: ID!) {
+                likeTrack(trackId: $trackId) {
+                    code
+                    success
+                    message
+                    trackLikes
+                }
+            }
+        `;
+
+        const UNDO_LIKE_TRACK = gql`
+            mutation UndoLikeTrack($trackId: ID!) {
+                undoLikeTrack(trackId: $trackId) {
+                    code
+                    success
+                    message
+                    trackLikes
+                }
+            }
+        `;
+
+        it('can like an track', async () => {
+            // ARRANGE
+            const requiredData = {
+                trackId: trackDoc.id,
+            };
+
+            // ACT
+            const res = await client.mutate({
+                mutation: LIKE_TRACK,
+                variables: requiredData,
+            });
+            const payload = res.data.likeTrack;
+            currentUser = await findUserById(currentUser.id);
+            trackDoc = await findTrackById(trackDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeTrackMutationResponse = {
+                code: '200',
+                success: true,
+                message: 'Successfully liked the track.',
+                trackLikes: 1,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.likedTracks.length).toEqual(1);
+            expect(trackDoc.likes).toEqual(1);
+            expect(trackDoc.likers.length).toEqual(1);
+        });
+
+        it('cannot like an track that the user has already liked', async () => {
+            // ARRANGE
+            const requiredData = {
+                trackId: trackDoc.id,
+            };
+
+            // ACT
+            const res = await client.mutate({
+                mutation: LIKE_TRACK,
+                variables: requiredData,
+            });
+            const payload = res.data.likeTrack;
+            currentUser = await findUserById(currentUser.id);
+            trackDoc = await findTrackById(trackDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeTrackMutationResponse = {
+                code: '409',
+                success: false,
+                message: 'ConflictError: The track is already liked by this user.',
+                trackLikes: null,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.likedTracks.length).toEqual(1);
+            expect(trackDoc.likes).toEqual(1);
+            expect(trackDoc.likers.length).toEqual(1);
+        });
+
+        it('can undo liking an track', async () => {
+            // ARRANGE
+            const requiredData = {
+                trackId: trackDoc.id,
+            };
+
+            // ACT
+            const res = await client.mutate({
+                mutation: UNDO_LIKE_TRACK,
+                variables: requiredData,
+            });
+            console.log(res);
+            const payload = res.data.undoLikeTrack;
+            currentUser = await findUserById(currentUser.id);
+            trackDoc = await findTrackById(trackDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeTrackMutationResponse = {
+                code: '200',
+                success: true,
+                message: 'Successfully unliked the track.',
+                trackLikes: 0,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.likedTracks.length).toEqual(0);
+            expect(trackDoc.likes).toEqual(0);
+            expect(trackDoc.likers.length).toEqual(0);
+        });
+
+        it('cannot undo liking an track that the user has not liked', async () => {
+            // ARRANGE
+            const requiredData = {
+                trackId: trackDoc.id,
+            };
+
+            // ACT
+            const res = await client.mutate({
+                mutation: UNDO_LIKE_TRACK,
+                variables: requiredData,
+            });
+            const payload = res.data.undoLikeTrack;
+            currentUser = await findUserById(currentUser.id);
+            trackDoc = await findTrackById(trackDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeTrackMutationResponse = {
+                code: '409',
+                success: false,
+                message: 'ConflictError: The user has not liked the track.',
+                trackLikes: null,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.likedTracks.length).toEqual(0);
+            expect(trackDoc.likes).toEqual(0);
+            expect(trackDoc.likers.length).toEqual(0);
         });
     });
 });

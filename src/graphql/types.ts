@@ -71,3 +71,7 @@ export interface LikeArtistMutationResponse extends MutationResponse {
 export interface LikeAlbumMutationResponse extends MutationResponse {
     albumLikes: number | null;
 }
+
+export interface LikeTrackMutationResponse extends MutationResponse {
+    trackLikes: number | null;
+}

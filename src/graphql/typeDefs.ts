@@ -198,6 +198,10 @@ export const typeDefs = gql`
         ## Album
         likeAlbum(albumId: ID!): LikeAlbumMutationResponse
         undoLikeAlbum(albumId: ID!): LikeAlbumMutationResponse
+
+        ## Track
+        likeTrack(trackId: ID!): LikeTrackMutationResponse
+        undoLikeTrack(trackId: ID!): LikeTrackMutationResponse
     }
 
     enum LikeAction {
@@ -278,5 +282,12 @@ export const typeDefs = gql`
         success: Boolean!
         message: String!
         albumLikes: Int
+    }
+
+    type LikeTrackMutationResponse implements MutationResponse {
+        code: String!
+        success: Boolean!
+        message: String!
+        trackLikes: Int
     }
 `;

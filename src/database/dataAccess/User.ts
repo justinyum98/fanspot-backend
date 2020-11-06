@@ -8,6 +8,7 @@ import ConflictError from '../../errors/ConflictError';
 import { CommentDocument } from '../models/CommentModel';
 import { ArtistDocument } from '../models/ArtistModel';
 import { AlbumDocument } from '../models/AlbumModel';
+import { TrackDocument } from '../models/TrackModel';
 
 export async function findUserById(id: string | mongoose.Types.ObjectId): Promise<UserDocument> {
     return new Promise((resolve, reject) => {
@@ -413,6 +414,53 @@ export async function undoLikeAlbum(
         await album.save();
 
         return [currentUser, album];
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function likeTrack(
+    currentUser: UserDocument,
+    track: TrackDocument,
+): Promise<[UserDocument, TrackDocument]> {
+    try {
+        // Check if the user has already liked the track.
+        if (currentUser.likedTracks.includes(track.id) && track.likers.includes(currentUser.id))
+            throw new ConflictError('The track is already liked by this user.');
+
+        // Like the track.
+        currentUser.likedTracks.push(track.id);
+        track.likes = track.likers.push(currentUser.id);
+
+        // Save the changes.
+        await currentUser.save();
+        await track.save();
+
+        return [currentUser, track];
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function undoLikeTrack(
+    currentUser: UserDocument,
+    track: TrackDocument,
+): Promise<[UserDocument, TrackDocument]> {
+    try {
+        // Verify that the user has liked the track.
+        if (!(currentUser.likedTracks.includes(track.id) && track.likers.includes(currentUser.id)))
+            throw new ConflictError('The user has not liked the track.');
+
+        // Undo liking the track.
+        currentUser.likedTracks.pull(track.id);
+        track.likers.pull(currentUser.id);
+        track.likes = track.likers.length;
+
+        // Save the changes.
+        await currentUser.save();
+        await track.save();
+
+        return [currentUser, track];
     } catch (error) {
         throw error;
     }

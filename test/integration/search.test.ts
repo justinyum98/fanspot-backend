@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import faker from 'faker';
 import { connectDatabase, closeDatabase } from '../../src/database';
 import { UserModel, UserDocument } from '../../src/database/models/UserModel';
 import { PostModel, PostDocument } from '../../src/database/models/PostModel';
@@ -6,6 +7,7 @@ import { ApolloServer, gql } from 'apollo-server-express';
 import { ApolloServerTestClient, createTestClient } from 'apollo-server-testing';
 import { createTestServer } from '../../src/graphql';
 import { createMultipleFakeUsers, createFakePost } from '../testUtils';
+import { ArtistDocument, ArtistModel } from '../../src/database/models/ArtistModel';
 
 describe('Search feature', () => {
     let connection: mongoose.Connection;
@@ -15,8 +17,6 @@ describe('Search feature', () => {
     });
 
     afterAll(async () => {
-        await UserModel.deleteMany({}).exec();
-        await PostModel.deleteMany({}).exec();
         await closeDatabase(connection);
     });
 
@@ -24,17 +24,21 @@ describe('Search feature', () => {
         let server: ApolloServer;
         let client: ApolloServerTestClient;
         let fakeUsers: Array<UserDocument>;
+        let fakeArtist: ArtistDocument;
         let fakePost: PostDocument;
 
         beforeAll(async () => {
             fakeUsers = await createMultipleFakeUsers(3);
-            fakePost = await createFakePost(fakeUsers[0].id);
+            fakeArtist = new ArtistModel({ name: faker.internet.userName() });
+            await fakeArtist.save();
+            fakePost = await createFakePost(fakeUsers[0].id, fakeArtist.id);
             server = createTestServer();
             client = createTestClient(server);
         });
 
         afterAll(async () => {
             await UserModel.deleteMany({}).exec();
+            await ArtistModel.findByIdAndDelete(fakeArtist.id).exec();
             await PostModel.deleteMany({}).exec();
         });
 

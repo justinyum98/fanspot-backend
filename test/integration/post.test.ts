@@ -48,7 +48,7 @@ describe('Post feature', () => {
             artist = new ArtistModel({
                 name: 'YOONii',
             });
-            artist.save();
+            await artist.save();
         });
 
         afterAll(async () => {
@@ -168,7 +168,7 @@ describe('Post feature', () => {
             // Create a post
             const res = await client.mutate({
                 mutation: CREATE_POST,
-                variables: { ...requiredData },
+                variables: requiredData,
             });
             const payload = res.data.createPost;
             // Retrieve updated current user and actual post

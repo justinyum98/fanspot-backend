@@ -33,6 +33,7 @@ export async function findPostById(id: PostDocument['_id']): Promise<PostDocumen
  * @param poster The user's ID.
  * @param title The title of the post.
  * @param postType Where the post is posted under. It can be either `'artist'`, `'album'`, or `'track'`.
+ * @param entityId The entity that the post lives under. Either an Artist, Album, or Track.
  * @param contentType The type of content. It can be either `'text'` or `media'`.
  * @param content The content of the post. Depending on 'contentType', it will either be a plaintext of Markdown OR a media URL.
  *

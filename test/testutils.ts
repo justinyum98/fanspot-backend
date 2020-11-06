@@ -18,7 +18,14 @@ export async function createMultipleFakeUsers(amount: number): Promise<Array<Use
     return fakeUsers;
 }
 
-export async function createFakePost(posterId: string): Promise<PostDocument> {
-    const [fakePost] = await createPost(posterId, faker.lorem.sentence(), 'ARTIST', 'TEXT', faker.lorem.paragraph());
+export async function createFakePost(posterId: string, artistId: string): Promise<PostDocument> {
+    const [fakePost] = await createPost(
+        posterId,
+        faker.lorem.sentence(),
+        'artist',
+        artistId,
+        'text',
+        faker.lorem.paragraph(),
+    );
     return fakePost;
 }

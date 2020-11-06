@@ -23,6 +23,7 @@ export interface UserDocument extends mongoose.Document {
     comments: mongoose.Types.Array<CommentDocument['_id']>;
     likedComments: mongoose.Types.Array<CommentDocument['_id']>;
     dislikedComments: mongoose.Types.Array<CommentDocument['_id']>;
+    likedArtists: mongoose.Types.Array<ArtistDocument['_id']>;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -71,6 +72,7 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
         comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
         likedComments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
         dislikedComments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
+        likedArtists: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Artist' }],
     },
     { timestamps: true },
 );
@@ -92,6 +94,7 @@ export interface UserObject {
     comments?: string[];
     likedComments?: string[];
     dislikedComments?: string[];
+    likedArtists?: string[];
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -131,6 +134,9 @@ UserSchema.set('toObject', {
             ret.dislikedComments = ret.dislikedComments.map((commentId: mongoose.Types.ObjectId) =>
                 commentId.toString(),
             );
+        }
+        if (ret.likedArtists) {
+            ret.likedArtists = ret.likedArtists.map((artistId: mongoose.Types.ObjectId) => artistId.toString());
         }
     },
 });

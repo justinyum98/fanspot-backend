@@ -8,6 +8,7 @@ import {
     DeleteCommentMutationResponse,
     LikeOrDislikePostMutationResponse,
     LikeOrDislikeCommentMutationResponse,
+    LikeArtistMutationResponse,
 } from '../types';
 import { UserDocument } from '../../database/models/UserModel';
 import {
@@ -25,6 +26,8 @@ import {
     dislikeComment,
     undoLikeComment,
     undoDislikeComment,
+    likeArtist,
+    undoLikeArtist,
 } from '../../database/dataAccess/User';
 import { PostDocument } from '../../database/models/PostModel';
 import { createPost, findPostById, deletePostById } from '../../database/dataAccess/Post';
@@ -37,6 +40,7 @@ import { createComment, deleteComment, findCommentById } from '../../database/da
 import { CommentDocument } from '../../database/models/CommentModel';
 import ConflictError from '../../errors/ConflictError';
 import NotAuthenticatedError from '../../errors/NotAuthenticatedError';
+import { findArtistById } from '../../database/dataAccess/Artist';
 
 export const Mutation = {
     Mutation: {
@@ -470,6 +474,109 @@ export const Mutation = {
                         message: error.toString(),
                         commentLikes: null,
                         commentDislikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        // Artists
+        likeArtist: async (
+            parent: unknown,
+            args: { artistId: string },
+            context: { token: string },
+        ): Promise<LikeArtistMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the artist exists.
+                let artist = await findArtistById(args.artistId);
+                if (!artist) throw new NotFoundError('Artist');
+
+                // Like the artist.
+                [currentUser, artist] = await likeArtist(currentUser, artist);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully liked the artist.',
+                    artistLikes: artist.likes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        artistLikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        artistLikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        artistLikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        undoLikeArtist: async (
+            parent: unknown,
+            args: { artistId: string },
+            context: { token: string },
+        ): Promise<LikeArtistMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the artist exists.
+                let artist = await findArtistById(args.artistId);
+                if (!artist) throw new NotFoundError('Artist');
+
+                // Undo liking the artist.
+                [currentUser, artist] = await undoLikeArtist(currentUser, artist);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully unliked the artist.',
+                    artistLikes: artist.likes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        artistLikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        artistLikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        artistLikes: null,
                     };
                 } else {
                     throw error;

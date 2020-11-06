@@ -6,6 +6,7 @@ import FollowError from '../../errors/FollowError';
 import { PostDocument } from '../models/PostModel';
 import ConflictError from '../../errors/ConflictError';
 import { CommentDocument } from '../models/CommentModel';
+import { ArtistDocument } from '../models/ArtistModel';
 
 export async function findUserById(id: string | mongoose.Types.ObjectId): Promise<UserDocument> {
     return new Promise((resolve, reject) => {
@@ -317,6 +318,53 @@ export async function undoDislikeComment(
         await comment.save();
 
         return [currentUser, comment];
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function likeArtist(
+    currentUser: UserDocument,
+    artist: ArtistDocument,
+): Promise<[UserDocument, ArtistDocument]> {
+    try {
+        // Check if the user has already liked the artist.
+        if (currentUser.likedArtists.includes(artist.id) && artist.likers.includes(currentUser.id))
+            throw new ConflictError('The artist is already liked by this user.');
+
+        // Like the artist.
+        currentUser.likedArtists.push(artist.id);
+        artist.likes = artist.likers.push(currentUser.id);
+
+        // Save the changes.
+        await currentUser.save();
+        await artist.save();
+
+        return [currentUser, artist];
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function undoLikeArtist(
+    currentUser: UserDocument,
+    artist: ArtistDocument,
+): Promise<[UserDocument, ArtistDocument]> {
+    try {
+        // Verify that the user has liked the artist.
+        if (!(currentUser.likedArtists.includes(artist.id) && artist.likers.includes(currentUser.id)))
+            throw new ConflictError('The user has not liked the artist.');
+
+        // Undo liking the artist.
+        currentUser.likedArtists.pull(artist.id);
+        artist.likers.pull(currentUser.id);
+        artist.likes = artist.likers.length;
+
+        // Save the changes.
+        await currentUser.save();
+        await artist.save();
+
+        return [currentUser, artist];
     } catch (error) {
         throw error;
     }

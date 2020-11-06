@@ -190,6 +190,10 @@ export const typeDefs = gql`
         deleteComment(commentId: ID!): DeleteCommentMutationResponse
         likeOrDislikeComment(commentId: ID!, action: LikeAction!): LikeOrDislikeCommentMutationResponse
         undoLikeOrDislikeComment(commentId: ID!, action: LikeAction!): LikeOrDislikeCommentMutationResponse
+
+        ## Artist
+        likeArtist(artistId: ID!): LikeArtistMutationResponse
+        undoLikeArtist(artistId: ID!): LikeArtistMutationResponse
     }
 
     enum LikeAction {
@@ -256,5 +260,12 @@ export const typeDefs = gql`
         message: String!
         commentLikes: Int
         commentDislikes: Int
+    }
+
+    type LikeArtistMutationResponse implements MutationResponse {
+        code: String!
+        success: Boolean!
+        message: String!
+        artistLikes: Int
     }
 `;

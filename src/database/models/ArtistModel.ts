@@ -93,6 +93,4 @@ ArtistSchema.set('toObject', {
     },
 });
 
-// TODO: Add JSON once you implement caching.
-
 export const ArtistModel: mongoose.Model<ArtistDocument> = mongoose.model<ArtistDocument>('Artist', ArtistSchema);

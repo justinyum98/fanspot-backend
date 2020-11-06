@@ -5,6 +5,7 @@ import logger from '../../utils/logger';
 import FollowError from '../../errors/FollowError';
 import { PostDocument } from '../models/PostModel';
 import ConflictError from '../../errors/ConflictError';
+import { CommentDocument } from '../models/CommentModel';
 
 export async function findUserById(id: string | mongoose.Types.ObjectId): Promise<UserDocument> {
     return new Promise((resolve, reject) => {
@@ -158,14 +159,13 @@ export async function dislikePost(
 
         // Dislike the post.
         currentUser.dislikedPosts.push(post.id);
-        post.dislikers.push(currentUser.id);
-        post.dislikes = post.dislikes + 1;
+        post.dislikes = post.dislikers.push(currentUser.id);
 
         // If the user has already liked the post, remove the like.
         if (currentUser.likedPosts.includes(post.id) && post.likers.includes(currentUser.id)) {
             currentUser.likedPosts.pull(post.id);
             post.likers.pull(currentUser.id);
-            post.likes = post.likes - 1;
+            post.likes = post.likers.length;
         }
 
         // Save the changes.
@@ -201,6 +201,122 @@ export async function undoDislikePost(
         await post.save();
 
         return [currentUser, post];
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function likeComment(
+    currentUser: UserDocument,
+    comment: CommentDocument,
+): Promise<[UserDocument, CommentDocument]> {
+    try {
+        // Check if the user already liked the comment.
+        if (currentUser.likedComments.includes(comment.id) && comment.likers.includes(currentUser.id))
+            throw new ConflictError('The comment is already liked by this user.');
+
+        // Like the comment.
+        currentUser.likedComments.push(comment.id);
+        comment.likes = comment.likers.push(currentUser.id);
+
+        // If the user has already disliked the comment, remove the dislike.
+        if (currentUser.dislikedComments.includes(comment.id) && comment.dislikers.includes(currentUser.id)) {
+            currentUser.dislikedComments.pull(comment.id);
+            comment.dislikers.pull(currentUser.id);
+            comment.dislikes = comment.dislikers.length;
+        }
+
+        // Save the changes.
+        await currentUser.save();
+        await comment.save();
+
+        return [currentUser, comment];
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function undoLikeComment(
+    currentUser: UserDocument,
+    comment: CommentDocument,
+): Promise<[UserDocument, CommentDocument]> {
+    try {
+        // Verify that the user has liked the comment.
+        if (!(currentUser.likedComments.includes(comment.id) && comment.likers.includes(currentUser.id)))
+            throw new ConflictError('The user has not liked the comment.');
+
+        // Verify that the user has not disliked the comment.
+        if (currentUser.dislikedComments.includes(comment.id) && comment.dislikers.includes(currentUser.id))
+            throw new ConflictError('Cannot undo liking a comment that the user has already disliked.');
+
+        // Undo liking the comment.
+        currentUser.likedComments.pull(comment.id);
+        comment.likers.pull(currentUser.id);
+        comment.likes = comment.likers.length;
+
+        // Save the changes.
+        await currentUser.save();
+        await comment.save();
+
+        return [currentUser, comment];
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function dislikeComment(
+    currentUser: UserDocument,
+    comment: CommentDocument,
+): Promise<[UserDocument, CommentDocument]> {
+    try {
+        // Check if the user already disliked the comment.
+        if (currentUser.dislikedComments.includes(comment.id) && comment.dislikers.includes(currentUser.id))
+            throw new ConflictError('The comment is already disliked by this user.');
+
+        // Dislike the comment.
+        currentUser.dislikedComments.push(comment.id);
+        comment.dislikes = comment.dislikers.push(currentUser.id);
+
+        // If the user has already liked the comment, remove the like.
+        if (currentUser.likedComments.includes(comment.id) && comment.likers.includes(currentUser.id)) {
+            currentUser.likedComments.pull(comment.id);
+            comment.likers.pull(currentUser.id);
+            comment.likes = comment.likers.length;
+        }
+
+        // Save the changes.
+        await currentUser.save();
+        await comment.save();
+
+        return [currentUser, comment];
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function undoDislikeComment(
+    currentUser: UserDocument,
+    comment: CommentDocument,
+): Promise<[UserDocument, CommentDocument]> {
+    try {
+        // Verify that the user has disliked the comment.
+        if (!(currentUser.dislikedComments.includes(comment.id) && comment.dislikers.includes(currentUser.id)))
+            throw new ConflictError('The user has not disliked the comment.');
+
+        // Verify that the user has not liked the comment.
+        if (currentUser.likedComments.includes(comment.id) && comment.likers.includes(currentUser.id))
+            throw new ConflictError('Cannot undo liking a comment that the user has already disliked.');
+
+        // Undo disliking the comment.
+        currentUser.dislikedComments.pull(comment.id);
+        comment.dislikers.pull(currentUser.id);
+        comment.dislikes = comment.dislikers.length;
+
+        // Save the changes.
+        await currentUser.save();
+        await comment.save();
+
+        return [currentUser, comment];
     } catch (error) {
         throw error;
     }

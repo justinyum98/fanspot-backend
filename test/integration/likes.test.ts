@@ -3,7 +3,7 @@ import { ApolloServerTestClient, createTestClient } from 'apollo-server-testing'
 import faker from 'faker';
 import mongoose from 'mongoose';
 import { closeDatabase, connectDatabase } from '../../src/database';
-import { createComment } from '../../src/database/dataAccess/Comment';
+import { createComment, findCommentById } from '../../src/database/dataAccess/Comment';
 import { createPost, findPostById } from '../../src/database/dataAccess/Post';
 import { createUser, findUserById } from '../../src/database/dataAccess/User';
 import { AlbumDocument, AlbumModel } from '../../src/database/models/AlbumModel';
@@ -13,7 +13,7 @@ import { PostDocument, PostModel } from '../../src/database/models/PostModel';
 import { TrackDocument, TrackModel } from '../../src/database/models/TrackModel';
 import { UserDocument, UserModel } from '../../src/database/models/UserModel';
 import { createTestServer } from '../../src/graphql';
-import { LikeOrDislikePostMutationResponse } from '../../src/graphql/types';
+import { LikeOrDislikePostMutationResponse, LikeOrDislikeCommentMutationResponse } from '../../src/graphql/types';
 import { generateJWT } from '../../src/utils/jwt';
 
 describe('Likes feature', () => {
@@ -452,6 +452,359 @@ describe('Likes feature', () => {
             expect(currentUser.likedPosts.length).toEqual(0);
             expect(postDoc.likes).toEqual(0);
             expect(postDoc.likers.length).toEqual(0);
+        });
+    });
+
+    describe('Comments', () => {
+        const LIKE_OR_DISLIKE_COMMENT = gql`
+            mutation LikeOrDislikeComment($commentId: ID!, $action: LikeAction!) {
+                likeOrDislikeComment(commentId: $commentId, action: $action) {
+                    code
+                    success
+                    message
+                    commentLikes
+                    commentDislikes
+                }
+            }
+        `;
+
+        const UNDO_LIKE_OR_DISLIKE_COMMENT = gql`
+            mutation UndoLikeOrDislikeComment($commentId: ID!, $action: LikeAction!) {
+                undoLikeOrDislikeComment(commentId: $commentId, action: $action) {
+                    code
+                    success
+                    message
+                    commentLikes
+                    commentDislikes
+                }
+            }
+        `;
+
+        it('can like a comment', async () => {
+            // ARRANGE
+            const requiredData = {
+                commentId: commentDoc.id,
+                action: 'like',
+            };
+
+            // ACT
+            const res = await client.mutate({
+                mutation: LIKE_OR_DISLIKE_COMMENT,
+                variables: requiredData,
+            });
+            const payload = res.data.likeOrDislikeComment;
+            currentUser = await findUserById(currentUser.id);
+            commentDoc = await findCommentById(commentDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeOrDislikeCommentMutationResponse = {
+                code: '200',
+                success: true,
+                message: 'Successfully liked the comment.',
+                commentLikes: 1,
+                commentDislikes: 0,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.likedComments.length).toEqual(1);
+            expect(commentDoc.likes).toEqual(1);
+            expect(commentDoc.likers.length).toEqual(1);
+        });
+
+        it('cannot like a comment that the user has already liked', async () => {
+            // ARRANGE
+            const requiredData = {
+                commentId: commentDoc.id,
+                action: 'like',
+            };
+
+            // ACT
+            const res = await client.mutate({
+                mutation: LIKE_OR_DISLIKE_COMMENT,
+                variables: requiredData,
+            });
+            const payload = res.data.likeOrDislikeComment;
+            currentUser = await findUserById(currentUser.id);
+            commentDoc = await findCommentById(commentDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeOrDislikeCommentMutationResponse = {
+                code: '409',
+                success: false,
+                message: 'ConflictError: The comment is already liked by this user.',
+                commentLikes: null,
+                commentDislikes: null,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.likedComments.length).toEqual(1);
+            expect(commentDoc.likes).toEqual(1);
+            expect(commentDoc.likers.length).toEqual(1);
+        });
+
+        it('can undo liking a comment', async () => {
+            // ARRANGE
+            const requiredData = {
+                commentId: commentDoc.id,
+                action: 'like',
+            };
+
+            // ACT
+            const res = await client.mutate({
+                mutation: UNDO_LIKE_OR_DISLIKE_COMMENT,
+                variables: requiredData,
+            });
+            const payload = res.data.undoLikeOrDislikeComment;
+            currentUser = await findUserById(currentUser.id);
+            commentDoc = await findCommentById(commentDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeOrDislikeCommentMutationResponse = {
+                code: '200',
+                success: true,
+                message: 'Successfully unliked the comment.',
+                commentLikes: 0,
+                commentDislikes: 0,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.likedComments.length).toEqual(0);
+            expect(commentDoc.likes).toEqual(0);
+            expect(commentDoc.likers.length).toEqual(0);
+        });
+
+        it('cannot undo liking a comment that the user has not liked', async () => {
+            // ARRANGE
+            const requiredData = {
+                commentId: commentDoc.id,
+                action: 'like',
+            };
+
+            // ACT
+            const res = await client.mutate({
+                mutation: UNDO_LIKE_OR_DISLIKE_COMMENT,
+                variables: requiredData,
+            });
+            const payload = res.data.undoLikeOrDislikeComment;
+            currentUser = await findUserById(currentUser.id);
+            commentDoc = await findCommentById(commentDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeOrDislikeCommentMutationResponse = {
+                code: '409',
+                success: false,
+                message: 'ConflictError: The user has not liked the comment.',
+                commentLikes: null,
+                commentDislikes: null,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.likedComments.length).toEqual(0);
+            expect(commentDoc.likes).toEqual(0);
+            expect(commentDoc.likers.length).toEqual(0);
+        });
+
+        it('can dislike a comment', async () => {
+            // ARRANGE
+            const requiredData = {
+                commentId: commentDoc.id,
+                action: 'dislike',
+            };
+
+            // ACT
+            const res = await client.mutate({
+                mutation: LIKE_OR_DISLIKE_COMMENT,
+                variables: requiredData,
+            });
+            const payload = res.data.likeOrDislikeComment;
+            currentUser = await findUserById(currentUser.id);
+            commentDoc = await findCommentById(commentDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeOrDislikeCommentMutationResponse = {
+                code: '200',
+                success: true,
+                message: 'Successfully disliked the comment.',
+                commentLikes: 0,
+                commentDislikes: 1,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.dislikedComments.length).toEqual(1);
+            expect(commentDoc.dislikes).toEqual(1);
+            expect(commentDoc.dislikers.length).toEqual(1);
+        });
+
+        it('cannot dislike a comment that the user already disliked', async () => {
+            // ARRANGE
+            const requiredData = {
+                commentId: commentDoc.id,
+                action: 'dislike',
+            };
+
+            // ACT
+            const res = await client.mutate({
+                mutation: LIKE_OR_DISLIKE_COMMENT,
+                variables: requiredData,
+            });
+            const payload = res.data.likeOrDislikeComment;
+            currentUser = await findUserById(currentUser.id);
+            commentDoc = await findCommentById(commentDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeOrDislikeCommentMutationResponse = {
+                code: '409',
+                success: false,
+                message: 'ConflictError: The comment is already disliked by this user.',
+                commentLikes: null,
+                commentDislikes: null,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.dislikedComments.length).toEqual(1);
+            expect(commentDoc.dislikes).toEqual(1);
+            expect(commentDoc.dislikers.length).toEqual(1);
+        });
+
+        it('can undo disliking a comment', async () => {
+            // ARRANGE
+            const requiredData = {
+                commentId: commentDoc.id,
+                action: 'dislike',
+            };
+
+            // ACT
+            const res = await client.mutate({
+                mutation: UNDO_LIKE_OR_DISLIKE_COMMENT,
+                variables: requiredData,
+            });
+            const payload = res.data.undoLikeOrDislikeComment;
+            currentUser = await findUserById(currentUser.id);
+            commentDoc = await findCommentById(commentDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeOrDislikeCommentMutationResponse = {
+                code: '200',
+                success: true,
+                message: 'Successfully undisliked the comment.',
+                commentLikes: 0,
+                commentDislikes: 0,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.dislikedComments.length).toEqual(0);
+            expect(commentDoc.dislikes).toEqual(0);
+            expect(commentDoc.dislikers.length).toEqual(0);
+        });
+
+        it('cannot undo disliking a comment that the user has not disliked', async () => {
+            // ARRANGE
+            const requiredData = {
+                commentId: commentDoc.id,
+                action: 'dislike',
+            };
+
+            // ACT
+            const res = await client.mutate({
+                mutation: UNDO_LIKE_OR_DISLIKE_COMMENT,
+                variables: requiredData,
+            });
+            const payload = res.data.undoLikeOrDislikeComment;
+            currentUser = await findUserById(currentUser.id);
+            commentDoc = await findCommentById(commentDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeOrDislikeCommentMutationResponse = {
+                code: '409',
+                success: false,
+                message: 'ConflictError: The user has not disliked the comment.',
+                commentLikes: null,
+                commentDislikes: null,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.dislikedComments.length).toEqual(0);
+            expect(commentDoc.dislikes).toEqual(0);
+            expect(commentDoc.dislikers.length).toEqual(0);
+        });
+
+        it('can like a comment that the user has disliked', async () => {
+            // ARRANGE
+            // First, dislike the post as the user.
+            const likeCommentRes = await client.mutate({
+                mutation: LIKE_OR_DISLIKE_COMMENT,
+                variables: {
+                    commentId: commentDoc.id,
+                    action: 'dislike',
+                },
+            });
+            currentUser = await findUserById(currentUser.id);
+            commentDoc = await findCommentById(commentDoc.id);
+
+            expect(likeCommentRes.data.likeOrDislikeComment.success).toEqual(true);
+
+            expect(currentUser.dislikedComments.length).toEqual(1);
+            expect(commentDoc.dislikes).toEqual(1);
+            expect(commentDoc.dislikers.length).toEqual(1);
+
+            expect(currentUser.likedComments.length).toEqual(0);
+            expect(commentDoc.likes).toEqual(0);
+            expect(commentDoc.likers.length).toEqual(0);
+
+            // ACT
+            // Now, like the comment that is disliked.
+            const res = await client.mutate({
+                mutation: LIKE_OR_DISLIKE_COMMENT,
+                variables: {
+                    commentId: commentDoc.id,
+                    action: 'like',
+                },
+            });
+            const payload = res.data.likeOrDislikeComment;
+            currentUser = await findUserById(currentUser.id);
+            commentDoc = await findCommentById(commentDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeOrDislikeCommentMutationResponse = {
+                code: '200',
+                success: true,
+                message: 'Successfully liked the comment.',
+                commentLikes: 1,
+                commentDislikes: 0,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.dislikedComments.length).toEqual(0);
+            expect(commentDoc.dislikes).toEqual(0);
+            expect(commentDoc.dislikers.length).toEqual(0);
+            expect(currentUser.likedComments.length).toEqual(1);
+            expect(commentDoc.likes).toEqual(1);
+            expect(commentDoc.likers.length).toEqual(1);
+        });
+
+        it('can dislike a comment that the user has liked', async () => {
+            // ARRANGE
+            const requiredData = {
+                commentId: commentDoc.id,
+                action: 'dislike',
+            };
+
+            // ACT
+            // Now, like the comment that is disliked.
+            const res = await client.mutate({
+                mutation: LIKE_OR_DISLIKE_COMMENT,
+                variables: requiredData,
+            });
+            const payload = res.data.likeOrDislikeComment;
+            currentUser = await findUserById(currentUser.id);
+            commentDoc = await findCommentById(commentDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeOrDislikeCommentMutationResponse = {
+                code: '200',
+                success: true,
+                message: 'Successfully disliked the comment.',
+                commentLikes: 0,
+                commentDislikes: 1,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.dislikedComments.length).toEqual(1);
+            expect(commentDoc.dislikes).toEqual(1);
+            expect(commentDoc.dislikers.length).toEqual(1);
+            expect(currentUser.likedComments.length).toEqual(0);
+            expect(commentDoc.likes).toEqual(0);
+            expect(commentDoc.likers.length).toEqual(0);
         });
     });
 });

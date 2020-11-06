@@ -109,6 +109,4 @@ TrackSchema.set('toObject', {
     },
 });
 
-// TODO: Add JSON once you implement caching.
-
 export const TrackModel: mongoose.Model<TrackDocument> = mongoose.model<TrackDocument>('Track', TrackSchema);

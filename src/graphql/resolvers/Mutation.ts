@@ -7,6 +7,7 @@ import {
     AddCommentMutationResponse,
     DeleteCommentMutationResponse,
     LikeOrDislikePostMutationResponse,
+    LikeOrDislikeCommentMutationResponse,
 } from '../types';
 import { UserDocument } from '../../database/models/UserModel';
 import {
@@ -20,6 +21,10 @@ import {
     dislikePost,
     undoLikePost,
     undoDislikePost,
+    likeComment,
+    dislikeComment,
+    undoLikeComment,
+    undoDislikeComment,
 } from '../../database/dataAccess/User';
 import { PostDocument } from '../../database/models/PostModel';
 import { createPost, findPostById, deletePostById } from '../../database/dataAccess/Post';
@@ -28,7 +33,7 @@ import { validatePasswordMatch } from '../../utils/password';
 import NotFoundError from '../../errors/NotFoundError';
 import NotAuthorizedError from '../../errors/NotAuthorizedError';
 import logger from '../../utils/logger';
-import { createComment, deleteComment } from '../../database/dataAccess/Comment';
+import { createComment, deleteComment, findCommentById } from '../../database/dataAccess/Comment';
 import { CommentDocument } from '../../database/models/CommentModel';
 import ConflictError from '../../errors/ConflictError';
 import NotAuthenticatedError from '../../errors/NotAuthenticatedError';
@@ -214,7 +219,6 @@ export const Mutation = {
             args: { postId: string; action: string },
             context: { token: string },
         ): Promise<LikeOrDislikePostMutationResponse> => {
-            // TODO: Finish implementing.
             try {
                 // Verify user.
                 const decodedToken = verifyJWT(context.token);
@@ -264,6 +268,7 @@ export const Mutation = {
                 }
             }
         },
+        // Comments
         addComment: async (
             parent: unknown,
             args: { postId: string; content: string; parentId?: string },
@@ -346,6 +351,130 @@ export const Mutation = {
                 message: 'Successfully deleted comment.',
                 deletedCommentId: deletedComment.id,
             };
+        },
+        likeOrDislikeComment: async (
+            parent: unknown,
+            args: { commentId: string; action: string },
+            context: { token: string },
+        ): Promise<LikeOrDislikeCommentMutationResponse> => {
+            try {
+                // Verify the user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the comment exists.
+                let comment: CommentDocument = await findCommentById(args.commentId);
+                if (!comment) throw new NotFoundError('Comment');
+
+                if (args.action === 'like') {
+                    // Like the comment.
+                    [currentUser, comment] = await likeComment(currentUser, comment);
+                } else if (args.action === 'dislike') {
+                    // Dislike the comment.
+                    [currentUser, comment] = await dislikeComment(currentUser, comment);
+                } else {
+                    throw new Error('Specified action is neither like or dislike.');
+                }
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: `Successfully ${args.action}d the comment.`,
+                    commentLikes: comment.likes,
+                    commentDislikes: comment.dislikes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        commentLikes: null,
+                        commentDislikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        commentLikes: null,
+                        commentDislikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        commentLikes: null,
+                        commentDislikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        undoLikeOrDislikeComment: async (
+            parent: unknown,
+            args: { commentId: string; action: string },
+            context: { token: string },
+        ): Promise<LikeOrDislikeCommentMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the comment exists.
+                let comment = await findCommentById(args.commentId);
+                if (!comment) throw new NotFoundError('Comment');
+
+                if (args.action === 'like') {
+                    // Undo liking the comment.
+                    [currentUser, comment] = await undoLikeComment(currentUser, comment);
+                } else if (args.action === 'dislike') {
+                    // Undo disliking the comment.
+                    [currentUser, comment] = await undoDislikeComment(currentUser, comment);
+                } else {
+                    throw new Error('Specified action is neither like or dislike.');
+                }
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: `Successfully un${args.action}d the comment.`,
+                    commentLikes: comment.likes,
+                    commentDislikes: comment.dislikes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        commentLikes: null,
+                        commentDislikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        commentLikes: null,
+                        commentDislikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        commentLikes: null,
+                        commentDislikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
         },
     },
     MutationResponse: {

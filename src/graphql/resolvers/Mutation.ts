@@ -1,5 +1,17 @@
 import { AuthenticationError } from 'apollo-server-express';
-import { AuthPayload, FollowMutationPayload, CreatePostMutationResponse, DeletePostMutationResponse } from '../types';
+import {
+    AuthPayload,
+    FollowMutationPayload,
+    CreatePostMutationResponse,
+    DeletePostMutationResponse,
+    AddCommentMutationResponse,
+    DeleteCommentMutationResponse,
+    LikeOrDislikePostMutationResponse,
+    LikeOrDislikeCommentMutationResponse,
+    LikeArtistMutationResponse,
+    LikeAlbumMutationResponse,
+    LikeTrackMutationResponse,
+} from '../types';
 import { UserDocument } from '../../database/models/UserModel';
 import {
     findUserById,
@@ -8,6 +20,20 @@ import {
     createUser,
     followUser,
     unfollowUser,
+    likePost,
+    dislikePost,
+    undoLikePost,
+    undoDislikePost,
+    likeComment,
+    dislikeComment,
+    undoLikeComment,
+    undoDislikeComment,
+    likeArtist,
+    undoLikeArtist,
+    likeAlbum,
+    undoLikeAlbum,
+    likeTrack,
+    undoLikeTrack,
 } from '../../database/dataAccess/User';
 import { PostDocument } from '../../database/models/PostModel';
 import { createPost, findPostById, deletePostById } from '../../database/dataAccess/Post';
@@ -16,6 +42,13 @@ import { validatePasswordMatch } from '../../utils/password';
 import NotFoundError from '../../errors/NotFoundError';
 import NotAuthorizedError from '../../errors/NotAuthorizedError';
 import logger from '../../utils/logger';
+import { createComment, deleteComment, findCommentById } from '../../database/dataAccess/Comment';
+import { CommentDocument } from '../../database/models/CommentModel';
+import ConflictError from '../../errors/ConflictError';
+import NotAuthenticatedError from '../../errors/NotAuthenticatedError';
+import { findArtistById } from '../../database/dataAccess/Artist';
+import { findAlbumById } from '../../database/dataAccess/Album';
+import { findTrackById } from '../../database/dataAccess/Track';
 
 export const Mutation = {
     Mutation: {
@@ -78,8 +111,8 @@ export const Mutation = {
             };
         },
         createPost: async (
-            parent: any,
-            args: { title: string; postType: string; contentType: string; content: string },
+            parent: unknown,
+            args: { title: string; postType: string; entityId: string; contentType: string; content: string },
             context: { token: string },
         ): Promise<CreatePostMutationResponse> => {
             const decodedToken = verifyJWT(context.token);
@@ -87,6 +120,7 @@ export const Mutation = {
                 decodedToken.id,
                 args.title,
                 args.postType,
+                args.entityId,
                 args.contentType,
                 args.content,
             );
@@ -105,7 +139,7 @@ export const Mutation = {
          * @returns Promise of DeletePostMutationResponse
          */
         deletePost: async (
-            parent: any,
+            parent: unknown,
             args: { postId: string },
             context: { token: string },
         ): Promise<DeletePostMutationResponse> => {
@@ -121,24 +155,645 @@ export const Mutation = {
             if (post.poster.toString() !== currentUser.id) throw new NotAuthorizedError('delete post');
             if (!currentUser.posts.includes(post.id)) throw new NotAuthorizedError('delete post');
 
-            // Delete the post by
-            try {
-                // (1) Remove the post id from user's "posts"
-                currentUser.posts.pull(post.id);
-                await currentUser.save();
-
-                // TODO: Once you add 'Artist', 'Album', and 'Song', remove post from their respective 'posts' according to type.
-            } catch (error) {
-                throw error;
-            }
-            // (2) Delete the post from database
-            const deletedPostId = await deletePostById(post.id);
+            // Delete the post.
+            const [deletedPostId] = await deletePostById(post.id);
             return {
                 code: '200',
                 success: true,
                 message: 'Post successfully deleted.',
                 deletedPostId,
             };
+        },
+        likeOrDislikePost: async (
+            parent: unknown,
+            args: { postId: string; action: string },
+            context: { token: string },
+        ): Promise<LikeOrDislikePostMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the post exists.
+                let post: PostDocument = await findPostById(args.postId);
+                if (!post) throw new NotFoundError('Post');
+
+                if (args.action === 'like') {
+                    // Like the post.
+                    [currentUser, post] = await likePost(currentUser, post);
+                } else if (args.action === 'dislike') {
+                    // Dislike the post.
+                    [currentUser, post] = await dislikePost(currentUser, post);
+                } else {
+                    throw new Error('Specified action is neither like or dislike.');
+                }
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: `Successfully ${args.action}d the post.`,
+                    postLikes: post.likes,
+                    postDislikes: post.dislikes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        postLikes: null,
+                        postDislikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        postLikes: null,
+                        postDislikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        postLikes: null,
+                        postDislikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        undoLikeOrDislikePost: async (
+            parent: unknown,
+            args: { postId: string; action: string },
+            context: { token: string },
+        ): Promise<LikeOrDislikePostMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the post exists.
+                let post = await findPostById(args.postId);
+                if (!post) throw new NotFoundError('Post');
+
+                if (args.action === 'like') {
+                    // Undo liking the post.
+                    [currentUser, post] = await undoLikePost(currentUser, post);
+                } else if (args.action === 'dislike') {
+                    // Undo disliking the post.
+                    [currentUser, post] = await undoDislikePost(currentUser, post);
+                } else {
+                    throw new Error('Specified action is neither like or dislike.');
+                }
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: `Successfully un${args.action}d the post.`,
+                    postLikes: post.likes,
+                    postDislikes: post.dislikes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        postLikes: null,
+                        postDislikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        postLikes: null,
+                        postDislikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        // Comments
+        addComment: async (
+            parent: unknown,
+            args: { postId: string; content: string; parentId?: string },
+            context: { token: string },
+        ): Promise<AddCommentMutationResponse> => {
+            // Verify user.
+            const decodedToken = verifyJWT(context.token);
+            const currentUser = await findUserById(decodedToken.id);
+
+            // Create the comment.
+            let comment: CommentDocument;
+
+            try {
+                const [newComment] = await createComment(args.postId, currentUser.id, args.content, args.parentId);
+                comment = newComment;
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        comment: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+
+            return {
+                code: '201',
+                success: true,
+                message: 'Successfully created comment.',
+                comment: comment.toObject(),
+            };
+        },
+        deleteComment: async (
+            parent: unknown,
+            args: { commentId: string },
+            context: { token: string },
+        ): Promise<DeleteCommentMutationResponse> => {
+            // Verify user.
+            const decodedToken = verifyJWT(context.token);
+            const currentUser = await findUserById(decodedToken.id);
+
+            // Delete the comment.
+            let deletedComment: CommentDocument;
+
+            try {
+                deletedComment = await deleteComment(args.commentId, currentUser.id);
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        deletedCommentId: null,
+                    };
+                } else if (error instanceof NotAuthorizedError) {
+                    return {
+                        code: '403',
+                        success: false,
+                        message: error.toString(),
+                        deletedCommentId: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        deletedCommentId: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+
+            return {
+                code: '200',
+                success: true,
+                message: 'Successfully deleted comment.',
+                deletedCommentId: deletedComment.id,
+            };
+        },
+        likeOrDislikeComment: async (
+            parent: unknown,
+            args: { commentId: string; action: string },
+            context: { token: string },
+        ): Promise<LikeOrDislikeCommentMutationResponse> => {
+            try {
+                // Verify the user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the comment exists.
+                let comment: CommentDocument = await findCommentById(args.commentId);
+                if (!comment) throw new NotFoundError('Comment');
+
+                if (args.action === 'like') {
+                    // Like the comment.
+                    [currentUser, comment] = await likeComment(currentUser, comment);
+                } else if (args.action === 'dislike') {
+                    // Dislike the comment.
+                    [currentUser, comment] = await dislikeComment(currentUser, comment);
+                } else {
+                    throw new Error('Specified action is neither like or dislike.');
+                }
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: `Successfully ${args.action}d the comment.`,
+                    commentLikes: comment.likes,
+                    commentDislikes: comment.dislikes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        commentLikes: null,
+                        commentDislikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        commentLikes: null,
+                        commentDislikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        commentLikes: null,
+                        commentDislikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        undoLikeOrDislikeComment: async (
+            parent: unknown,
+            args: { commentId: string; action: string },
+            context: { token: string },
+        ): Promise<LikeOrDislikeCommentMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the comment exists.
+                let comment = await findCommentById(args.commentId);
+                if (!comment) throw new NotFoundError('Comment');
+
+                if (args.action === 'like') {
+                    // Undo liking the comment.
+                    [currentUser, comment] = await undoLikeComment(currentUser, comment);
+                } else if (args.action === 'dislike') {
+                    // Undo disliking the comment.
+                    [currentUser, comment] = await undoDislikeComment(currentUser, comment);
+                } else {
+                    throw new Error('Specified action is neither like or dislike.');
+                }
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: `Successfully un${args.action}d the comment.`,
+                    commentLikes: comment.likes,
+                    commentDislikes: comment.dislikes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        commentLikes: null,
+                        commentDislikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        commentLikes: null,
+                        commentDislikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        commentLikes: null,
+                        commentDislikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        // Artists
+        likeArtist: async (
+            parent: unknown,
+            args: { artistId: string },
+            context: { token: string },
+        ): Promise<LikeArtistMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the artist exists.
+                let artist = await findArtistById(args.artistId);
+                if (!artist) throw new NotFoundError('Artist');
+
+                // Like the artist.
+                [currentUser, artist] = await likeArtist(currentUser, artist);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully liked the artist.',
+                    artistLikes: artist.likes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        artistLikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        artistLikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        artistLikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        undoLikeArtist: async (
+            parent: unknown,
+            args: { artistId: string },
+            context: { token: string },
+        ): Promise<LikeArtistMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the artist exists.
+                let artist = await findArtistById(args.artistId);
+                if (!artist) throw new NotFoundError('Artist');
+
+                // Undo liking the artist.
+                [currentUser, artist] = await undoLikeArtist(currentUser, artist);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully unliked the artist.',
+                    artistLikes: artist.likes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        artistLikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        artistLikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        artistLikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        likeAlbum: async (
+            parent: unknown,
+            args: { albumId: string },
+            context: { token: string },
+        ): Promise<LikeAlbumMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the album exists.
+                let album = await findAlbumById(args.albumId);
+                if (!album) throw new NotFoundError('Album');
+
+                // Like the album.
+                [currentUser, album] = await likeAlbum(currentUser, album);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully liked the album.',
+                    albumLikes: album.likes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        albumLikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        albumLikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        albumLikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        undoLikeAlbum: async (
+            parent: unknown,
+            args: { albumId: string },
+            context: { token: string },
+        ): Promise<LikeAlbumMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the album exists.
+                let album = await findAlbumById(args.albumId);
+                if (!album) throw new NotFoundError('Album');
+
+                // Undo liking the album.
+                [currentUser, album] = await undoLikeAlbum(currentUser, album);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully unliked the album.',
+                    albumLikes: album.likes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        albumLikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        albumLikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        albumLikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        likeTrack: async (
+            parent: unknown,
+            args: { trackId: string },
+            context: { token: string },
+        ): Promise<LikeTrackMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the track exists.
+                let track = await findTrackById(args.trackId);
+                if (!track) throw new NotFoundError('Track');
+
+                // Like the track.
+                [currentUser, track] = await likeTrack(currentUser, track);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully liked the track.',
+                    trackLikes: track.likes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        trackLikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        trackLikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        trackLikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        undoLikeTrack: async (
+            parent: unknown,
+            args: { trackId: string },
+            context: { token: string },
+        ): Promise<LikeTrackMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the track exists.
+                let track = await findTrackById(args.trackId);
+                if (!track) throw new NotFoundError('Track');
+
+                // Undo liking the track.
+                [currentUser, track] = await undoLikeTrack(currentUser, track);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully unliked the track.',
+                    trackLikes: track.likes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        trackLikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        trackLikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        trackLikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
         },
     },
     MutationResponse: {

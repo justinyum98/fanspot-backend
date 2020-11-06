@@ -5,12 +5,13 @@ import { UserModel, UserDocument, UserObject } from '../../src/database/models/U
 import { createUser } from '../../src/database/dataAccess/User';
 import { PostModel, PostDocument, PostObject } from '../../src/database/models/PostModel';
 import { createPost, findPostById, deletePostById } from '../../src/database/dataAccess/Post';
+import { ArtistModel, ArtistDocument, ArtistObject } from '../../src/database/models/ArtistModel';
 
 describe('Post data access methods', () => {
     let connection: mongoose.Connection;
     let userDoc: UserDocument;
-    let textPost: PostDocument;
-    let mediaPost: PostDocument;
+    let artistDoc: ArtistDocument;
+    let postDoc: PostDocument;
 
     beforeAll(async () => {
         connection = await connectDatabase();
@@ -19,98 +20,90 @@ describe('Post data access methods', () => {
     afterAll(async () => {
         await UserModel.deleteMany({}).exec();
         await PostModel.deleteMany({}).exec();
+        await ArtistModel.findByIdAndDelete(artistDoc.id).exec();
         await closeDatabase(connection);
     });
 
-    it('can create a new text Post', async () => {
+    it('can create a new Post for an Artist', async () => {
+        // ARRANGE
         // Need to create a poster (User) first
         userDoc = await createUser(faker.internet.userName(), faker.internet.password(), faker.internet.email());
+        // Next, need to create the Artist.
+        artistDoc = new ArtistModel({
+            name: 'YOONii',
+        });
+        await artistDoc.save();
+
+        // ACT
+        // Now, create the text post.
         const requiredPostData = {
             poster: userDoc.id,
             title: faker.lorem.words(6),
-            postType: 'ARTIST',
-            contentType: 'TEXT',
+            postType: 'artist',
+            entityId: artistDoc.id,
+            contentType: 'text',
             content: faker.lorem.paragraphs(2),
         };
-
-        // Create text post
-        const [newPost, user] = await createPost(
+        const [newPost, user, entity] = await createPost(
             requiredPostData.poster,
             requiredPostData.title,
             requiredPostData.postType,
+            requiredPostData.entityId,
             requiredPostData.contentType,
             requiredPostData.content,
         );
-        textPost = newPost;
+        postDoc = newPost;
         userDoc = user;
-        const postObject: PostObject = textPost.toObject();
+        artistDoc = entity as ArtistDocument;
+        const postObject: PostObject = postDoc.toObject();
         const userObject: UserObject = userDoc.toObject();
+        const artistObject: ArtistObject = artistDoc.toObject();
 
-        expect(postObject.id).toBeDefined();
-        expect(postObject.poster).toEqual(requiredPostData.poster);
-        expect(postObject.title).toEqual(requiredPostData.title);
-        expect(postObject.likes).toEqual(0);
-        expect(postObject.dislikes).toEqual(0);
-        expect(postObject.likers).toEqual([]);
-        expect(postObject.dislikers).toEqual([]);
-        expect(postObject.postType).toEqual(requiredPostData.postType);
-        expect(postObject.contentType).toEqual(requiredPostData.contentType);
-        expect(postObject.content).toEqual(requiredPostData.content);
-        expect(postObject.createdAt).toBeDefined();
-        expect(postObject.updatedAt).toBeDefined();
-
+        // ASSERT
+        const expectedPost: PostObject = {
+            id: postObject.id,
+            poster: userObject.id,
+            title: requiredPostData.title,
+            likes: 0,
+            dislikes: 0,
+            likers: [],
+            dislikers: [],
+            postType: requiredPostData.postType,
+            artist: requiredPostData.entityId,
+            album: null,
+            track: null,
+            contentType: requiredPostData.contentType,
+            content: requiredPostData.content,
+            createdAt: postObject.createdAt,
+            updatedAt: postObject.updatedAt,
+        };
+        expect(postObject).toMatchObject(expectedPost);
         expect(userObject.posts.length).toEqual(1);
         expect(userObject.posts[0]).toEqual(postObject.id);
-    });
-
-    it('can create a new media Post', async () => {
-        const requiredPostData = {
-            poster: userDoc.id,
-            title: faker.lorem.words(6),
-            postType: 'ALBUM',
-            contentType: 'MEDIA',
-            content: faker.image.imageUrl(),
-        };
-
-        // Create media post
-        const [newPost, user] = await createPost(
-            requiredPostData.poster,
-            requiredPostData.title,
-            requiredPostData.postType,
-            requiredPostData.contentType,
-            requiredPostData.content,
-        );
-        mediaPost = newPost;
-        userDoc = user;
-        const postObject: PostObject = mediaPost.toObject();
-
-        expect(postObject.id).toBeDefined();
-        expect(postObject.poster).toEqual(requiredPostData.poster);
-        expect(postObject.title).toEqual(requiredPostData.title);
-        expect(postObject.likes).toEqual(0);
-        expect(postObject.dislikes).toEqual(0);
-        expect(postObject.likers).toEqual([]);
-        expect(postObject.dislikers).toEqual([]);
-        expect(postObject.postType).toEqual(requiredPostData.postType);
-        expect(postObject.contentType).toEqual(requiredPostData.contentType);
-        expect(postObject.content).toEqual(requiredPostData.content);
-        expect(postObject.createdAt).toBeDefined();
-        expect(postObject.updatedAt).toBeDefined();
+        expect(artistObject.posts.length).toEqual(1);
+        expect(artistObject.posts[0]).toEqual(postObject.id);
     });
 
     it('can find a post by id', async () => {
-        const foundPost = await findPostById(textPost.id);
+        const foundPost = await findPostById(postDoc.id);
         const actualPost = foundPost.toObject();
-        const expectedPost = textPost.toObject();
+        const expectedPost = postDoc.toObject();
 
         expect(actualPost).toEqual(expectedPost);
     });
 
     it('can delete a post by id', async () => {
-        const deletedPostId = await deletePostById(textPost.id);
+        // ARRANGE
 
+        // ACT
+        const [deletedPostId, poster, entity] = await deletePostById(postDoc.id);
         const foundPost = await findPostById(deletedPostId);
+        userDoc = poster;
+        artistDoc = entity;
 
+        // ASSERT
         expect(foundPost).toBeNull();
+        expect(userDoc.posts.length).toEqual(0);
+        expect(artistDoc.posts.length).toEqual(0);
     });
 });

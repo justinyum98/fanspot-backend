@@ -1,6 +1,9 @@
 import mongoose = require('mongoose');
 import { PostDocument } from './PostModel';
 import { ArtistDocument } from './ArtistModel';
+import { CommentDocument } from './CommentModel';
+import { AlbumDocument } from './AlbumModel';
+import { TrackDocument } from './TrackModel';
 
 export interface Privacy {
     follow: boolean;
@@ -17,6 +20,14 @@ export interface UserDocument extends mongoose.Document {
     followers: mongoose.Types.Array<UserDocument['_id']>;
     following: mongoose.Types.Array<UserDocument['_id']>;
     posts: mongoose.Types.Array<PostDocument['_id']>;
+    likedPosts: mongoose.Types.Array<PostDocument['_id']>;
+    dislikedPosts: mongoose.Types.Array<PostDocument['_id']>;
+    comments: mongoose.Types.Array<CommentDocument['_id']>;
+    likedComments: mongoose.Types.Array<CommentDocument['_id']>;
+    dislikedComments: mongoose.Types.Array<CommentDocument['_id']>;
+    likedArtists: mongoose.Types.Array<ArtistDocument['_id']>;
+    likedAlbums: mongoose.Types.Array<AlbumDocument['_id']>;
+    likedTracks: mongoose.Types.Array<TrackDocument['_id']>;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -60,6 +71,14 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
         followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
         following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
         posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+        likedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+        dislikedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+        comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
+        likedComments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
+        dislikedComments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
+        likedArtists: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Artist' }],
+        likedAlbums: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Album' }],
+        likedTracks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Track' }],
     },
     { timestamps: true },
 );
@@ -76,6 +95,14 @@ export interface UserObject {
     followers?: string[];
     following?: string[];
     posts?: string[];
+    likedPosts?: string[];
+    dislikedPosts?: string[];
+    comments?: string[];
+    likedComments?: string[];
+    dislikedComments?: string[];
+    likedArtists?: string[];
+    likedAlbums?: string[];
+    likedTracks?: string[];
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -90,68 +117,41 @@ UserSchema.set('toObject', {
         if (ret.artist) {
             ret.artist = ret.artist.toString();
         }
-        ret.following.forEach(
-            (userId: mongoose.Types.ObjectId, index: number, following: Array<mongoose.Types.ObjectId | string>) => {
-                following[index] = userId.toString();
-            },
-        );
-        ret.followers.forEach(
-            (userId: mongoose.Types.ObjectId, index: number, followers: Array<mongoose.Types.ObjectId | string>) => {
-                followers[index] = userId.toString();
-            },
-        );
-        ret.posts.forEach(
-            (postId: mongoose.Types.ObjectId, index: number, posts: Array<mongoose.Types.ObjectId | string>) => {
-                posts[index] = postId.toString();
-            },
-        );
-    },
-});
-
-export interface UserJSON {
-    id?: string;
-    username?: string;
-    password?: string;
-    email?: string;
-    profilePictureUrl?: string;
-    privacy?: Privacy;
-    isArtist?: boolean;
-    artist?: string;
-    followers?: string[];
-    following?: string[];
-    posts?: string[];
-    createdAt?: string;
-    updatedAt?: string;
-}
-
-UserSchema.set('toJSON', {
-    versionKey: false,
-    virtuals: true,
-    transform: (doc: UserDocument, ret) => {
-        // IMPORTANT: MUST DEPOPULATE FIELDS BEFORE USING toObject.
-        ret.id = ret._id.toString();
-        delete ret._id;
-        if (ret.artist) {
-            ret.artist = ret.artist.toString();
+        if (ret.following) {
+            ret.following = ret.following.map((userId: mongoose.Types.ObjectId) => userId.toString());
         }
-        ret.following.forEach(
-            (userId: mongoose.Types.ObjectId, index: number, following: Array<mongoose.Types.ObjectId | string>) => {
-                following[index] = userId.toString();
-            },
-        );
-        ret.followers.forEach(
-            (userId: mongoose.Types.ObjectId, index: number, followers: Array<mongoose.Types.ObjectId | string>) => {
-                followers[index] = userId.toString();
-            },
-        );
-        ret.posts.forEach(
-            (postId: mongoose.Types.ObjectId, index: number, posts: Array<mongoose.Types.ObjectId | string>) => {
-                posts[index] = postId.toString();
-            },
-        );
-        // Timestamp
-        ret.createdAt = ret.createdAt.toISOString();
-        ret.updatedAt = ret.updatedAt.toISOString();
+        if (ret.followers) {
+            ret.followers = ret.followers.map((userId: mongoose.Types.ObjectId) => userId.toString());
+        }
+        if (ret.posts) {
+            ret.posts = ret.posts.map((postId: mongoose.Types.ObjectId) => postId.toString());
+        }
+        if (ret.likedPosts) {
+            ret.likedPosts = ret.likedPosts.map((postId: mongoose.Types.ObjectId) => postId.toString());
+        }
+        if (ret.dislikedPosts) {
+            ret.dislikedPosts = ret.dislikedPosts.map((postId: mongoose.Types.ObjectId) => postId.toString());
+        }
+        if (ret.comments) {
+            ret.comments = ret.comments.map((commentId: mongoose.Types.ObjectId) => commentId.toString());
+        }
+        if (ret.likedComments) {
+            ret.likedComments = ret.likedComments.map((commentId: mongoose.Types.ObjectId) => commentId.toString());
+        }
+        if (ret.dislikedComments) {
+            ret.dislikedComments = ret.dislikedComments.map((commentId: mongoose.Types.ObjectId) =>
+                commentId.toString(),
+            );
+        }
+        if (ret.likedArtists) {
+            ret.likedArtists = ret.likedArtists.map((artistId: mongoose.Types.ObjectId) => artistId.toString());
+        }
+        if (ret.likedAlbums) {
+            ret.likedAlbums = ret.likedAlbums.map((albumId: mongoose.Types.ObjectId) => albumId.toString());
+        }
+        if (ret.likedTracks) {
+            ret.likedTracks = ret.likedTracks.map((trackId: mongoose.Types.ObjectId) => trackId.toString());
+        }
     },
 });
 

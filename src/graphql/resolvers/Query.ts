@@ -1,12 +1,15 @@
 import mongoose from 'mongoose';
-import { Follower, SearchResult } from '../types';
+import { Follower, SearchResult, PostComment } from '../types';
 import { verifyJWT } from '../../utils/jwt';
 import { findUserById } from '../../database/dataAccess/User';
 import { UserDocument, UserModel } from '../../database/models/UserModel';
 import { PostDocument, PostObject, PostModel } from '../../database/models/PostModel';
 import PrivacyError from '../../errors/PrivacyError';
+import { findPostById } from '../../database/dataAccess/Post';
+import NotFoundError from '../../errors/NotFoundError';
+import { CommentDocument, CommentModel } from '../../database/models/CommentModel';
 import { ArtistModel, ArtistDocument } from '../../database/models/ArtistModel';
-import { AlbumModel, AlbumDocument } from '../..//database/models/AlbumModel';
+import { AlbumModel, AlbumDocument } from '../../database/models/AlbumModel';
 import { TrackModel, TrackDocument } from '../../database/models/TrackModel';
 
 export const Query = {
@@ -137,6 +140,43 @@ export const Query = {
                 return post.toObject();
             });
             return postsPayload;
+        },
+        getPostComments: async (parent: unknown, args: { postId: string }): Promise<PostComment[]> => {
+            let post: PostDocument;
+            let postComments: CommentDocument[];
+            const payload: PostComment[] = [];
+            try {
+                // Verify that the post exists.
+                post = await findPostById(args.postId);
+                if (!post) throw new NotFoundError('Post');
+
+                // Get the post's comments.
+                postComments = await CommentModel.find({ post: post.id }).exec();
+                for (let i = 0; i < postComments.length; i++) {
+                    const postComment = await postComments[i]
+                        .populate('poster', 'id username profilePictureUrl')
+                        .execPopulate();
+                    payload.push({
+                        id: postComment.id,
+                        poster: {
+                            id: postComment.poster.id,
+                            username: postComment.poster.username,
+                            profilePictureUrl: postComment.poster.profilePictureUrl,
+                        },
+                        content: postComment.content,
+                        likes: postComment.likes,
+                        dislikes: postComment.dislikes,
+                        parent: postComment.parent,
+                        children: postComment.children,
+                        isDeleted: postComment.isDeleted,
+                        createdAt: postComment.createdAt,
+                        updatedAt: postComment.updatedAt,
+                    });
+                }
+            } catch (error) {
+                throw error;
+            }
+            return payload;
         },
         // Private (requires token)
         getCurrentUserFollowers: async (parent: any, args: any, context: { token: string }): Promise<Follower[]> => {

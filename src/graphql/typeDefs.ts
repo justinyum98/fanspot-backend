@@ -14,6 +14,7 @@ export const typeDefs = gql`
         followers: [ID!]! # ids of Users
         following: [ID!]! # ids of Users
         posts: [ID!]! # ids of Posts
+        comments: [ID!]! # ids of Comments
         createdAt: DateTime!
         updatedAt: DateTime!
     }
@@ -91,19 +92,37 @@ export const typeDefs = gql`
         track: ID # id of Track
         contentType: ContentType!
         content: String! # Either plaintext of Markdown OR media url
+        comments: [ID!]!
         createdAt: DateTime!
         updatedAt: DateTime!
     }
 
     enum PostType {
-        ARTIST
-        ALBUM
-        TRACK
+        artist
+        album
+        track
     }
 
     enum ContentType {
-        TEXT
-        MEDIA
+        text
+        media
+    }
+
+    ### COMMENT ###
+    type Comment {
+        id: ID!
+        post: ID!
+        poster: ID!
+        content: String!
+        likes: Int!
+        dislikes: Int!
+        likers: [ID!]!
+        dislikers: [ID!]!
+        parent: ID
+        children: [ID!]!
+        isDeleted: Boolean!
+        createdAt: DateTime!
+        updatedAt: DateTime!
     }
 
     ### QUERY ###
@@ -115,9 +134,13 @@ export const typeDefs = gql`
         getUserPosts(userId: ID!): [Post!]!
 
         # Private (requires token)
+        ## User
         getCurrentUserFollowers: [Follower!]!
         getCurrentUserFollowing: [Follower!]!
         getCurrentUserPosts: [Post!]!
+
+        ## Comment
+        getPostComments(postId: ID!): [PostComment!]!
     }
 
     type SearchResult {
@@ -142,6 +165,19 @@ export const typeDefs = gql`
         profilePictureUrl: URL
     }
 
+    type PostComment {
+        id: ID!
+        poster: Follower!
+        content: String!
+        likes: Int!
+        dislikes: Int!
+        parent: ID
+        children: [ID!]!
+        isDeleted: Boolean!
+        createdAt: DateTime!
+        updatedAt: DateTime!
+    }
+
     ### MUTATION ###
     type Mutation {
         # Public
@@ -149,15 +185,44 @@ export const typeDefs = gql`
         register(username: String!, password: String!, email: EmailAddress!): AuthPayload
 
         # Private (requires token)
+        ## Follow
         follow(targetUserId: ID!): FollowMutationPayload
         unfollow(targetUserId: ID!): FollowMutationPayload
+
+        ## Post
         createPost(
             title: String!
             postType: PostType!
+            entityId: ID!
             contentType: ContentType!
             content: String!
         ): CreatePostMutationResponse
         deletePost(postId: ID!): DeletePostMutationResponse
+        likeOrDislikePost(postId: ID!, action: LikeAction!): LikeOrDislikePostMutationResponse
+        undoLikeOrDislikePost(postId: ID!, action: LikeAction!): LikeOrDislikePostMutationResponse
+
+        ## Comment
+        addComment(postId: ID!, content: String!, parentId: ID): AddCommentMutationResponse
+        deleteComment(commentId: ID!): DeleteCommentMutationResponse
+        likeOrDislikeComment(commentId: ID!, action: LikeAction!): LikeOrDislikeCommentMutationResponse
+        undoLikeOrDislikeComment(commentId: ID!, action: LikeAction!): LikeOrDislikeCommentMutationResponse
+
+        ## Artist
+        likeArtist(artistId: ID!): LikeArtistMutationResponse
+        undoLikeArtist(artistId: ID!): LikeArtistMutationResponse
+
+        ## Album
+        likeAlbum(albumId: ID!): LikeAlbumMutationResponse
+        undoLikeAlbum(albumId: ID!): LikeAlbumMutationResponse
+
+        ## Track
+        likeTrack(trackId: ID!): LikeTrackMutationResponse
+        undoLikeTrack(trackId: ID!): LikeTrackMutationResponse
+    }
+
+    enum LikeAction {
+        like
+        dislike
     }
 
     interface MutationResponse {
@@ -189,5 +254,56 @@ export const typeDefs = gql`
         success: Boolean!
         message: String!
         deletedPostId: ID!
+    }
+
+    type AddCommentMutationResponse implements MutationResponse {
+        code: String!
+        success: Boolean!
+        message: String!
+        comment: Comment
+    }
+
+    type DeleteCommentMutationResponse implements MutationResponse {
+        code: String!
+        success: Boolean!
+        message: String!
+        deletedCommentId: ID
+    }
+
+    type LikeOrDislikePostMutationResponse implements MutationResponse {
+        code: String!
+        success: Boolean!
+        message: String!
+        postLikes: Int
+        postDislikes: Int
+    }
+
+    type LikeOrDislikeCommentMutationResponse implements MutationResponse {
+        code: String!
+        success: Boolean!
+        message: String!
+        commentLikes: Int
+        commentDislikes: Int
+    }
+
+    type LikeArtistMutationResponse implements MutationResponse {
+        code: String!
+        success: Boolean!
+        message: String!
+        artistLikes: Int
+    }
+
+    type LikeAlbumMutationResponse implements MutationResponse {
+        code: String!
+        success: Boolean!
+        message: String!
+        albumLikes: Int
+    }
+
+    type LikeTrackMutationResponse implements MutationResponse {
+        code: String!
+        success: Boolean!
+        message: String!
+        trackLikes: Int
     }
 `;

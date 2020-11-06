@@ -1,18 +1,112 @@
 import mongoose from 'mongoose';
-import { Follower, PostComment } from '../types';
+import { Follower, SearchResult, PostComment } from '../types';
 import { verifyJWT } from '../../utils/jwt';
 import { findUserById } from '../../database/dataAccess/User';
-import { UserDocument } from '../../database/models/UserModel';
-import { PostDocument, PostObject } from '../../database/models/PostModel';
+import { UserDocument, UserModel } from '../../database/models/UserModel';
+import { PostDocument, PostObject, PostModel } from '../../database/models/PostModel';
 import PrivacyError from '../../errors/PrivacyError';
-import { findPostById } from '../..//database/dataAccess/Post';
+import { findPostById } from '../../database/dataAccess/Post';
 import NotFoundError from '../../errors/NotFoundError';
 import { CommentDocument, CommentModel } from '../../database/models/CommentModel';
+import { ArtistModel, ArtistDocument } from '../../database/models/ArtistModel';
+import { AlbumModel, AlbumDocument } from '../../database/models/AlbumModel';
+import { TrackModel, TrackDocument } from '../../database/models/TrackModel';
 
 export const Query = {
     Query: {
         // Public
-        sayHello: (): string => 'hello',
+        search: async (parent: any, args: { queryStr: string }): Promise<SearchResult[]> => {
+            const searchResults: SearchResult[] = [];
+            const queryRegExp = new RegExp(args.queryStr, 'i');
+
+            // Search order: Artist -> Album -> Track -> User -> Post
+            const artistMatches: ArtistDocument[] = await ArtistModel.find(
+                {
+                    name: queryRegExp,
+                },
+                'id name profilePictureUrl',
+            ).exec();
+            artistMatches.forEach((artistMatch) => {
+                searchResults.push({
+                    id: artistMatch.id,
+                    name: artistMatch.name,
+                    author: null,
+                    pictureUrl: artistMatch.profilePictureUrl,
+                    type: 'artist',
+                });
+            });
+            const albumMatches: AlbumDocument[] = await AlbumModel.find(
+                {
+                    title: queryRegExp,
+                },
+                'id title coverArtUrl artists',
+            )
+                .populate('artists')
+                .exec();
+            albumMatches.forEach((albumMatch) => {
+                const artistsNames: string[] = albumMatch.artists.map((artist: ArtistDocument) => artist.name);
+                searchResults.push({
+                    id: albumMatch.id,
+                    name: albumMatch.title,
+                    author: artistsNames.join(','),
+                    pictureUrl: albumMatch.coverArtUrl,
+                    type: 'album',
+                });
+            });
+            const trackMatches: TrackDocument[] = await TrackModel.find(
+                {
+                    title: queryRegExp,
+                },
+                'id title album artists',
+            )
+                .populate('album')
+                .populate('artists')
+                .exec();
+            trackMatches.forEach((trackMatch) => {
+                const artistsNames: string[] = trackMatch.artists.map((artist: ArtistDocument) => artist.name);
+                searchResults.push({
+                    id: trackMatch.id,
+                    name: trackMatch.title,
+                    author: artistsNames.join(', '),
+                    pictureUrl: trackMatch.album.coverArtUrl,
+                    type: 'track',
+                });
+            });
+            const userMatches: UserDocument[] = await UserModel.find(
+                {
+                    username: queryRegExp,
+                },
+                'id username profilePictureUrl',
+            ).exec();
+            userMatches.forEach((userMatch) => {
+                searchResults.push({
+                    id: userMatch.id,
+                    name: userMatch.username,
+                    author: null,
+                    pictureUrl: userMatch.profilePictureUrl,
+                    type: 'user',
+                });
+            });
+            const postMatches: PostDocument[] = await PostModel.find(
+                {
+                    title: queryRegExp,
+                },
+                'id title poster',
+            )
+                .populate('poster')
+                .exec();
+            postMatches.forEach((postMatch: PostDocument) => {
+                searchResults.push({
+                    id: postMatch.id,
+                    name: postMatch.title,
+                    author: postMatch.poster.username,
+                    pictureUrl: null,
+                    type: 'post',
+                });
+            });
+
+            return searchResults;
+        },
         getUserFollowers: async (parent: any, args: { userId: string }, context: any): Promise<Follower[]> => {
             let targetUser: UserDocument = await findUserById(args.userId);
             if (!targetUser.privacy.follow) throw new PrivacyError('follow');

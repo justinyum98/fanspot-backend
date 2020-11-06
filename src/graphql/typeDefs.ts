@@ -128,7 +128,7 @@ export const typeDefs = gql`
     ### QUERY ###
     type Query {
         # Public
-        sayHello: String!
+        search(queryStr: String!): [SearchResult!]!
         getUserFollowers(userId: ID!): [Follower!]!
         getUserFollowing(userId: ID!): [Follower!]!
         getUserPosts(userId: ID!): [Post!]!
@@ -141,6 +141,22 @@ export const typeDefs = gql`
 
         ## Comment
         getPostComments(postId: ID!): [PostComment!]!
+    }
+
+    type SearchResult {
+        id: ID!
+        name: String!
+        author: String
+        pictureUrl: URL
+        type: SearchResultType!
+    }
+
+    enum SearchResultType {
+        user
+        artist
+        album
+        track
+        post
     }
 
     type Follower {

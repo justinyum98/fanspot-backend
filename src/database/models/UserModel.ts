@@ -2,6 +2,7 @@ import mongoose = require('mongoose');
 import { PostDocument } from './PostModel';
 import { ArtistDocument } from './ArtistModel';
 import { CommentDocument } from './CommentModel';
+import { AlbumDocument } from './AlbumModel';
 
 export interface Privacy {
     follow: boolean;
@@ -24,6 +25,7 @@ export interface UserDocument extends mongoose.Document {
     likedComments: mongoose.Types.Array<CommentDocument['_id']>;
     dislikedComments: mongoose.Types.Array<CommentDocument['_id']>;
     likedArtists: mongoose.Types.Array<ArtistDocument['_id']>;
+    likedAlbums: mongoose.Types.Array<AlbumDocument['_id']>;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -73,6 +75,7 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
         likedComments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
         dislikedComments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
         likedArtists: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Artist' }],
+        likedAlbums: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Album' }],
     },
     { timestamps: true },
 );
@@ -95,6 +98,7 @@ export interface UserObject {
     likedComments?: string[];
     dislikedComments?: string[];
     likedArtists?: string[];
+    likedAlbums?: string[];
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -137,6 +141,9 @@ UserSchema.set('toObject', {
         }
         if (ret.likedArtists) {
             ret.likedArtists = ret.likedArtists.map((artistId: mongoose.Types.ObjectId) => artistId.toString());
+        }
+        if (ret.likedAlbums) {
+            ret.likedAlbums = ret.likedAlbums.map((albumId: mongoose.Types.ObjectId) => albumId.toString());
         }
     },
 });

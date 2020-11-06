@@ -3,6 +3,7 @@ import { ApolloServerTestClient, createTestClient } from 'apollo-server-testing'
 import faker from 'faker';
 import mongoose from 'mongoose';
 import { closeDatabase, connectDatabase } from '../../src/database';
+import { findAlbumById } from '../../src/database/dataAccess/Album';
 import { findArtistById } from '../../src/database/dataAccess/Artist';
 import { createComment, findCommentById } from '../../src/database/dataAccess/Comment';
 import { createPost, findPostById } from '../../src/database/dataAccess/Post';
@@ -14,7 +15,12 @@ import { PostDocument, PostModel } from '../../src/database/models/PostModel';
 import { TrackDocument, TrackModel } from '../../src/database/models/TrackModel';
 import { UserDocument, UserModel } from '../../src/database/models/UserModel';
 import { createTestServer } from '../../src/graphql';
-import { LikeOrDislikePostMutationResponse, LikeOrDislikeCommentMutationResponse, LikeArtistMutationResponse } from '../../src/graphql/types';
+import {
+    LikeOrDislikePostMutationResponse,
+    LikeOrDislikeCommentMutationResponse,
+    LikeArtistMutationResponse,
+    LikeAlbumMutationResponse,
+} from '../../src/graphql/types';
 import { generateJWT } from '../../src/utils/jwt';
 
 describe('Likes feature', () => {
@@ -832,50 +838,6 @@ describe('Likes feature', () => {
             }
         `;
 
-        const LIKE_ALBUM = gql`
-            mutation LikeAlbum($albumId: ID!) {
-                likeAlbum(albumId: $albumId) {
-                    code
-                    success
-                    message
-                    albumLikes
-                }
-            }
-        `;
-
-        const UNDO_LIKE_ALBUM = gql`
-            mutation UndoLikeAlbum($albumId: ID!) {
-                undoLikeAlbum(albumId: $albumId) {
-                    code
-                    success
-                    message
-                    albumLikes
-                }
-            }
-        `;
-
-        const LIKE_TRACK = gql`
-            mutation LikeTrack($trackId: ID!) {
-                likeTrack(trackId: $trackId) {
-                    code
-                    success
-                    message
-                    trackLikes
-                }
-            }
-        `;
-
-        const UNDO_LIKE_TRACK = gql`
-            mutation UndoLikeTrack($trackId: ID!) {
-                undoLikeTrack(trackId: $trackId) {
-                    code
-                    success
-                    message
-                    trackLikes
-                }
-            }
-        `;
-
         it('can like an artist', async () => {
             // ARRANGE
             const requiredData = {
@@ -986,6 +948,142 @@ describe('Likes feature', () => {
             expect(currentUser.likedArtists.length).toEqual(0);
             expect(artistDoc.likes).toEqual(0);
             expect(artistDoc.likers.length).toEqual(0);
+        });
+    });
+
+    describe('Albums', () => {
+        const LIKE_ALBUM = gql`
+            mutation LikeAlbum($albumId: ID!) {
+                likeAlbum(albumId: $albumId) {
+                    code
+                    success
+                    message
+                    albumLikes
+                }
+            }
+        `;
+
+        const UNDO_LIKE_ALBUM = gql`
+            mutation UndoLikeAlbum($albumId: ID!) {
+                undoLikeAlbum(albumId: $albumId) {
+                    code
+                    success
+                    message
+                    albumLikes
+                }
+            }
+        `;
+
+        it('can like an album', async () => {
+            // ARRANGE
+            const requiredData = {
+                albumId: albumDoc.id,
+            };
+
+            // ACT
+            const res = await client.mutate({
+                mutation: LIKE_ALBUM,
+                variables: requiredData,
+            });
+            const payload = res.data.likeAlbum;
+            currentUser = await findUserById(currentUser.id);
+            albumDoc = await findAlbumById(albumDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeAlbumMutationResponse = {
+                code: '200',
+                success: true,
+                message: 'Successfully liked the album.',
+                albumLikes: 1,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.likedAlbums.length).toEqual(1);
+            expect(albumDoc.likes).toEqual(1);
+            expect(albumDoc.likers.length).toEqual(1);
+        });
+
+        it('cannot like an album that the user has already liked', async () => {
+            // ARRANGE
+            const requiredData = {
+                albumId: albumDoc.id,
+            };
+
+            // ACT
+            const res = await client.mutate({
+                mutation: LIKE_ALBUM,
+                variables: requiredData,
+            });
+            const payload = res.data.likeAlbum;
+            currentUser = await findUserById(currentUser.id);
+            albumDoc = await findAlbumById(albumDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeAlbumMutationResponse = {
+                code: '409',
+                success: false,
+                message: 'ConflictError: The album is already liked by this user.',
+                albumLikes: null,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.likedAlbums.length).toEqual(1);
+            expect(albumDoc.likes).toEqual(1);
+            expect(albumDoc.likers.length).toEqual(1);
+        });
+
+        it('can undo liking an album', async () => {
+            // ARRANGE
+            const requiredData = {
+                albumId: albumDoc.id,
+            };
+
+            // ACT
+            const res = await client.mutate({
+                mutation: UNDO_LIKE_ALBUM,
+                variables: requiredData,
+            });
+            const payload = res.data.undoLikeAlbum;
+            currentUser = await findUserById(currentUser.id);
+            albumDoc = await findAlbumById(albumDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeAlbumMutationResponse = {
+                code: '200',
+                success: true,
+                message: 'Successfully unliked the album.',
+                albumLikes: 0,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.likedAlbums.length).toEqual(0);
+            expect(albumDoc.likes).toEqual(0);
+            expect(albumDoc.likers.length).toEqual(0);
+        });
+
+        it('cannot undo liking an album that the user has not liked', async () => {
+            // ARRANGE
+            const requiredData = {
+                albumId: albumDoc.id,
+            };
+
+            // ACT
+            const res = await client.mutate({
+                mutation: UNDO_LIKE_ALBUM,
+                variables: requiredData,
+            });
+            const payload = res.data.undoLikeAlbum;
+            currentUser = await findUserById(currentUser.id);
+            albumDoc = await findAlbumById(albumDoc.id);
+
+            // ASSERT
+            const expectedPayload: LikeAlbumMutationResponse = {
+                code: '409',
+                success: false,
+                message: 'ConflictError: The user has not liked the album.',
+                albumLikes: null,
+            };
+            expect(payload).toMatchObject(expectedPayload);
+            expect(currentUser.likedAlbums.length).toEqual(0);
+            expect(albumDoc.likes).toEqual(0);
+            expect(albumDoc.likers.length).toEqual(0);
         });
     });
 });

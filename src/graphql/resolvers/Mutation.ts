@@ -9,6 +9,7 @@ import {
     LikeOrDislikePostMutationResponse,
     LikeOrDislikeCommentMutationResponse,
     LikeArtistMutationResponse,
+    LikeAlbumMutationResponse,
 } from '../types';
 import { UserDocument } from '../../database/models/UserModel';
 import {
@@ -28,6 +29,8 @@ import {
     undoDislikeComment,
     likeArtist,
     undoLikeArtist,
+    likeAlbum,
+    undoLikeAlbum,
 } from '../../database/dataAccess/User';
 import { PostDocument } from '../../database/models/PostModel';
 import { createPost, findPostById, deletePostById } from '../../database/dataAccess/Post';
@@ -41,6 +44,7 @@ import { CommentDocument } from '../../database/models/CommentModel';
 import ConflictError from '../../errors/ConflictError';
 import NotAuthenticatedError from '../../errors/NotAuthenticatedError';
 import { findArtistById } from '../../database/dataAccess/Artist';
+import { findAlbumById } from '../../database/dataAccess/Album';
 
 export const Mutation = {
     Mutation: {
@@ -577,6 +581,108 @@ export const Mutation = {
                         success: false,
                         message: error.toString(),
                         artistLikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        likeAlbum: async (
+            parent: unknown,
+            args: { albumId: string },
+            context: { token: string },
+        ): Promise<LikeAlbumMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the album exists.
+                let album = await findAlbumById(args.albumId);
+                if (!album) throw new NotFoundError('Album');
+
+                // Like the album.
+                [currentUser, album] = await likeAlbum(currentUser, album);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully liked the album.',
+                    albumLikes: album.likes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        albumLikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        albumLikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        albumLikes: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        undoLikeAlbum: async (
+            parent: unknown,
+            args: { albumId: string },
+            context: { token: string },
+        ): Promise<LikeAlbumMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the album exists.
+                let album = await findAlbumById(args.albumId);
+                if (!album) throw new NotFoundError('Album');
+
+                // Undo liking the album.
+                [currentUser, album] = await undoLikeAlbum(currentUser, album);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully unliked the album.',
+                    albumLikes: album.likes,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        albumLikes: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        albumLikes: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        albumLikes: null,
                     };
                 } else {
                     throw error;

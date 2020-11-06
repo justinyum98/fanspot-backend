@@ -67,3 +67,7 @@ export interface LikeOrDislikeCommentMutationResponse extends MutationResponse {
 export interface LikeArtistMutationResponse extends MutationResponse {
     artistLikes: number | null;
 }
+
+export interface LikeAlbumMutationResponse extends MutationResponse {
+    albumLikes: number | null;
+}

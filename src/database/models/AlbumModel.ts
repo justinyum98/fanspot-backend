@@ -17,6 +17,7 @@ export interface AlbumDocument extends mongoose.Document {
     posts: mongoose.Types.Array<PostDocument['_id']>;
     likes: number;
     likers: mongoose.Types.Array<UserDocument['_id']>;
+    followers: mongoose.Types.Array<UserDocument['_id']>;
 }
 
 const AlbumSchema: mongoose.Schema = new mongoose.Schema({
@@ -53,6 +54,7 @@ const AlbumSchema: mongoose.Schema = new mongoose.Schema({
         default: 0,
     },
     likers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 });
 
 export interface AlbumObject {
@@ -68,6 +70,7 @@ export interface AlbumObject {
     posts: string[];
     likes: number;
     likers: string[];
+    followers: string[];
 }
 
 AlbumSchema.set('toObject', {
@@ -76,30 +79,21 @@ AlbumSchema.set('toObject', {
     transform: (doc: AlbumDocument, ret) => {
         ret.id = ret._id.toString();
         delete ret._id;
-        _.forEach(
-            ret.artists,
-            (artistId: mongoose.Types.ObjectId, index: number, artists: Array<mongoose.Types.ObjectId | string>) => {
-                artists[index] = artistId.toString();
-            },
-        );
-        _.forEach(
-            ret.tracks,
-            (songId: mongoose.Types.ObjectId, index: number, songs: Array<mongoose.Types.ObjectId | string>) => {
-                songs[index] = songId.toString();
-            },
-        );
-        _.forEach(
-            ret.posts,
-            (postId: mongoose.Types.ObjectId, index: number, posts: Array<mongoose.Types.ObjectId | string>) => {
-                posts[index] = postId.toString();
-            },
-        );
-        _.forEach(
-            ret.likers,
-            (userId: mongoose.Types.ObjectId, index: number, users: Array<mongoose.Types.ObjectId | string>) => {
-                users[index] = userId.toString();
-            },
-        );
+        if (ret.artists) {
+            ret.artists = ret.artists.map((artistId: mongoose.Types.ObjectId) => artistId.toString());
+        }
+        if (ret.tracks) {
+            ret.tracks = ret.tracks.map((trackId: mongoose.Types.ObjectId) => trackId.toString());
+        }
+        if (ret.posts) {
+            ret.posts = ret.posts.map((postId: mongoose.Types.ObjectId) => postId.toString());
+        }
+        if (ret.likers) {
+            ret.likers = ret.likers.map((userId: mongoose.Types.ObjectId) => userId.toString());
+        }
+        if (ret.followers) {
+            ret.followers = ret.followers.map((userId: mongoose.Types.ObjectId) => userId.toString());
+        }
     },
 });
 

@@ -46,6 +46,18 @@ export interface FollowMutationPayload {
     targetUserFollowers: string[];
 }
 
+export interface FollowArtistMutationResponse extends MutationResponse {
+    artistId: string;
+}
+
+export interface FollowAlbumMutationResponse extends MutationResponse {
+    albumId: string;
+}
+
+export interface FollowTrackMutationResponse extends MutationResponse {
+    trackId: string;
+}
+
 export interface CreatePostMutationResponse extends MutationResponse {
     post: PostObject;
 }

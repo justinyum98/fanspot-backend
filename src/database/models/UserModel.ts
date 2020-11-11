@@ -19,6 +19,9 @@ export interface UserDocument extends mongoose.Document {
     artist: ArtistDocument['_id'];
     followers: mongoose.Types.Array<UserDocument['_id']>;
     following: mongoose.Types.Array<UserDocument['_id']>;
+    followedArtists: mongoose.Types.Array<ArtistDocument['_id']>;
+    followedAlbums: mongoose.Types.Array<AlbumDocument['_id']>;
+    followedTracks: mongoose.Types.Array<TrackDocument['_id']>;
     posts: mongoose.Types.Array<PostDocument['_id']>;
     likedPosts: mongoose.Types.Array<PostDocument['_id']>;
     dislikedPosts: mongoose.Types.Array<PostDocument['_id']>;
@@ -70,6 +73,9 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
         },
         followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
         following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+        followedArtists: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Artist' }],
+        followedAlbums: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Album' }],
+        followedTracks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Track' }],
         posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
         likedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
         dislikedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
@@ -94,6 +100,9 @@ export interface UserObject {
     artist?: string;
     followers?: string[];
     following?: string[];
+    followedArtists?: string[];
+    followedAlbums?: string[];
+    followedTracks?: string[];
     posts?: string[];
     likedPosts?: string[];
     dislikedPosts?: string[];
@@ -122,6 +131,15 @@ UserSchema.set('toObject', {
         }
         if (ret.followers) {
             ret.followers = ret.followers.map((userId: mongoose.Types.ObjectId) => userId.toString());
+        }
+        if (ret.followedArtists) {
+            ret.followedArtists = ret.followedArtists.map((artistId: mongoose.Types.ObjectId) => artistId.toString());
+        }
+        if (ret.followedAlbums) {
+            ret.followedAlbums = ret.followedAlbums.map((albumId: mongoose.Types.ObjectId) => albumId.toString());
+        }
+        if (ret.followedTracks) {
+            ret.followedTracks = ret.followedTracks.map((trackId: mongoose.Types.ObjectId) => trackId.toString());
         }
         if (ret.posts) {
             ret.posts = ret.posts.map((postId: mongoose.Types.ObjectId) => postId.toString());

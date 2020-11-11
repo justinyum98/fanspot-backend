@@ -18,6 +18,7 @@ export interface TrackDocument extends mongoose.Document {
     posts: mongoose.Types.Array<PostDocument['_id']>;
     likes: number;
     likers: mongoose.Types.Array<UserDocument['_id']>;
+    followers: mongoose.Types.Array<UserDocument['_id']>;
 }
 
 const TrackSchema: mongoose.Schema = new mongoose.Schema({
@@ -62,6 +63,7 @@ const TrackSchema: mongoose.Schema = new mongoose.Schema({
         default: 0,
     },
     likers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 });
 
 export interface TrackObject {
@@ -78,6 +80,7 @@ export interface TrackObject {
     posts: string[];
     likes: number;
     likers: string[];
+    followers: string[];
 }
 
 TrackSchema.set('toObject', {
@@ -87,25 +90,18 @@ TrackSchema.set('toObject', {
         ret.id = ret._id.toString();
         delete ret._id;
         ret.album = ret.album ? ret.album.toString() : null;
-        _.forEach(
-            ret.artists,
-            (artistId: mongoose.Types.ObjectId, index: number, artists: Array<mongoose.Types.ObjectId | string>) => {
-                artists[index] = artistId.toString();
-            },
-        );
-        ret.album = ret.album.toString();
-        _.forEach(
-            ret.posts,
-            (postId: mongoose.Types.ObjectId, index: number, posts: Array<mongoose.Types.ObjectId | string>) => {
-                posts[index] = postId.toString();
-            },
-        );
-        _.forEach(
-            ret.likers,
-            (userId: mongoose.Types.ObjectId, index: number, users: Array<mongoose.Types.ObjectId | string>) => {
-                users[index] = userId.toString();
-            },
-        );
+        if (ret.artists) {
+            ret.artists = ret.artists.map((artistId: mongoose.Types.ObjectId) => artistId.toString());
+        }
+        if (ret.posts) {
+            ret.posts = ret.posts.map((postId: mongoose.Types.ObjectId) => postId.toString());
+        }
+        if (ret.likers) {
+            ret.likers = ret.likers.map((userId: mongoose.Types.ObjectId) => userId.toString());
+        }
+        if (ret.followers) {
+            ret.followers = ret.followers.map((userId: mongoose.Types.ObjectId) => userId.toString());
+        }
     },
 });
 

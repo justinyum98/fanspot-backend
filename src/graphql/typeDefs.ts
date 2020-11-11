@@ -188,6 +188,12 @@ export const typeDefs = gql`
         ## Follow
         follow(targetUserId: ID!): FollowMutationPayload
         unfollow(targetUserId: ID!): FollowMutationPayload
+        followArtist(artistId: ID!): FollowArtistMutationResponse
+        unfollowArtist(artistId: ID!): FollowArtistMutationResponse
+        followAlbum(albumId: ID!): FollowAlbumMutationResponse
+        unfollowAlbum(albumId: ID!): FollowAlbumMutationResponse
+        followTrack(trackId: ID!): FollowTrackMutationResponse
+        unfollowTrack(trackId: ID!): FollowTrackMutationResponse
 
         ## Post
         createPost(
@@ -240,6 +246,27 @@ export const typeDefs = gql`
         # "String!" being the user IDs.
         currentUserFollowing: [ID!]!
         targetUserFollowers: [ID!]!
+    }
+
+    type FollowArtistMutationResponse implements MutationResponse {
+        code: String!
+        success: Boolean!
+        message: String!
+        artistId: ID
+    }
+
+    type FollowAlbumMutationResponse implements MutationResponse {
+        code: String!
+        success: Boolean!
+        message: String!
+        albumId: ID
+    }
+
+    type FollowTrackMutationResponse implements MutationResponse {
+        code: String!
+        success: Boolean!
+        message: String!
+        trackId: ID
     }
 
     type CreatePostMutationResponse implements MutationResponse {

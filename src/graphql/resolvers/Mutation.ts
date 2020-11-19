@@ -11,6 +11,9 @@ import {
     LikeArtistMutationResponse,
     LikeAlbumMutationResponse,
     LikeTrackMutationResponse,
+    FollowArtistMutationResponse,
+    FollowAlbumMutationResponse,
+    FollowTrackMutationResponse,
 } from '../types';
 import { UserDocument } from '../../database/models/UserModel';
 import {
@@ -34,6 +37,12 @@ import {
     undoLikeAlbum,
     likeTrack,
     undoLikeTrack,
+    followArtist,
+    followAlbum,
+    followTrack,
+    unfollowArtist,
+    unfollowAlbum,
+    unfollowTrack,
 } from '../../database/dataAccess/User';
 import { PostDocument } from '../../database/models/PostModel';
 import { createPost, findPostById, deletePostById } from '../../database/dataAccess/Post';
@@ -109,6 +118,312 @@ export const Mutation = {
                 currentUserFollowing: currentUserDoc.toObject().following,
                 targetUserFollowers: targetUserDoc.toObject().followers,
             };
+        },
+        followArtist: async (
+            parent: unknown,
+            args: { artistId: string },
+            context: { token: string },
+        ): Promise<FollowArtistMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the artist exists.
+                let artist = await findArtistById(args.artistId);
+                if (!artist) throw new NotFoundError('Artist');
+
+                // Follow the artist.
+                [currentUser, artist] = await followArtist(currentUser, artist);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully followed the artist.',
+                    artistId: artist.id,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        artistId: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        artistId: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        artistId: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        unfollowArtist: async (
+            parent: unknown,
+            args: { artistId: string },
+            context: { token: string },
+        ): Promise<FollowArtistMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the artist exists.
+                let artist = await findArtistById(args.artistId);
+                if (!artist) throw new NotFoundError('Artist');
+
+                // Unfollow the artist.
+                [currentUser, artist] = await unfollowArtist(currentUser, artist);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully unfollowed the artist.',
+                    artistId: artist.id,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        artistId: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        artistId: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        artistId: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        followAlbum: async (
+            parent: unknown,
+            args: { albumId: string },
+            context: { token: string },
+        ): Promise<FollowAlbumMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the album exists.
+                let album = await findAlbumById(args.albumId);
+                if (!album) throw new NotFoundError('Album');
+
+                // Follow the album.
+                [currentUser, album] = await followAlbum(currentUser, album);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully followed the album.',
+                    albumId: album.id,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        albumId: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        albumId: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        albumId: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        unfollowAlbum: async (
+            parent: unknown,
+            args: { albumId: string },
+            context: { token: string },
+        ): Promise<FollowAlbumMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the album exists.
+                let album = await findAlbumById(args.albumId);
+                if (!album) throw new NotFoundError('Album');
+
+                // Unfollow the album.
+                [currentUser, album] = await unfollowAlbum(currentUser, album);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully unfollowed the album.',
+                    albumId: album.id,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        albumId: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        albumId: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        albumId: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        followTrack: async (
+            parent: unknown,
+            args: { trackId: string },
+            context: { token: string },
+        ): Promise<FollowTrackMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the track exists.
+                let track = await findTrackById(args.trackId);
+                if (!track) throw new NotFoundError('Track');
+
+                // Follow the track.
+                [currentUser, track] = await followTrack(currentUser, track);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully followed the track.',
+                    trackId: track.id,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        trackId: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        trackId: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        trackId: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        },
+        unfollowTrack: async (
+            parent: unknown,
+            args: { trackId: string },
+            context: { token: string },
+        ): Promise<FollowTrackMutationResponse> => {
+            try {
+                // Verify user.
+                const decodedToken = verifyJWT(context.token);
+                let currentUser = await findUserById(decodedToken.id);
+                if (!currentUser) throw new NotFoundError('Current user');
+
+                // Check if the track exists.
+                let track = await findTrackById(args.trackId);
+                if (!track) throw new NotFoundError('Track');
+
+                // Follow the track.
+                [currentUser, track] = await unfollowTrack(currentUser, track);
+
+                return {
+                    code: '200',
+                    success: true,
+                    message: 'Successfully unfollowed the track.',
+                    trackId: track.id,
+                };
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    return {
+                        code: '404',
+                        success: false,
+                        message: error.toString(),
+                        trackId: null,
+                    };
+                } else if (error instanceof ConflictError) {
+                    return {
+                        code: '409',
+                        success: false,
+                        message: error.toString(),
+                        trackId: null,
+                    };
+                } else if (error instanceof NotAuthenticatedError) {
+                    return {
+                        code: '401',
+                        success: false,
+                        message: error.toString(),
+                        trackId: null,
+                    };
+                } else {
+                    throw error;
+                }
+            }
         },
         createPost: async (
             parent: unknown,

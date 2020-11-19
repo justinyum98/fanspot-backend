@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
-import { Follower, SearchResult, PostComment } from '../types';
+import { ApolloError } from 'apollo-server-express';
+import { Follower, SearchResult, PostComment, FollowingResult } from '../types';
 import { verifyJWT } from '../../utils/jwt';
 import { findUserById } from '../../database/dataAccess/User';
 import { UserDocument, UserModel } from '../../database/models/UserModel';
@@ -15,7 +16,7 @@ import { TrackModel, TrackDocument } from '../../database/models/TrackModel';
 export const Query = {
     Query: {
         // Public
-        search: async (parent: any, args: { queryStr: string }): Promise<SearchResult[]> => {
+        search: async (parent: unknown, args: { queryStr: string }): Promise<SearchResult[]> => {
             const searchResults: SearchResult[] = [];
             const queryRegExp = new RegExp(args.queryStr, 'i');
 
@@ -107,7 +108,7 @@ export const Query = {
 
             return searchResults;
         },
-        getUserFollowers: async (parent: any, args: { userId: string }, context: any): Promise<Follower[]> => {
+        getUserFollowers: async (parent: unknown, args: { userId: string }): Promise<Follower[]> => {
             let targetUser: UserDocument = await findUserById(args.userId);
             if (!targetUser.privacy.follow) throw new PrivacyError('follow');
             targetUser = await targetUser.populate('followers', 'id username profilePictureUrl').execPopulate();
@@ -117,7 +118,7 @@ export const Query = {
             });
             return followersPayload;
         },
-        getUserFollowing: async (parent: any, args: { userId: string }, context: any): Promise<Follower[]> => {
+        getUserFollowing: async (parent: unknown, args: { userId: string }): Promise<Follower[]> => {
             let targetUser: UserDocument = await findUserById(args.userId);
             if (!targetUser.privacy.follow) throw new PrivacyError('follow');
             targetUser = await targetUser.populate('following', 'id username profilePictureUrl').execPopulate();
@@ -132,7 +133,7 @@ export const Query = {
          * * Functionally, there is not difference from 'getUserPosts' and 'getCurrentUserPosts'.
          * * However, I created two separate resolvers if, in the future, I add privacy settings on posts.
          */
-        getUserPosts: async (parent: any, args: { userId: string }, context: any): Promise<PostObject[]> => {
+        getUserPosts: async (parent: unknown, args: { userId: string }): Promise<PostObject[]> => {
             let targetUser: UserDocument = await findUserById(args.userId);
             targetUser = await targetUser.populate('posts').execPopulate();
             const posts: PostDocument[] = targetUser.posts.toObject();
@@ -140,6 +141,82 @@ export const Query = {
                 return post.toObject();
             });
             return postsPayload;
+        },
+        getUserFollowingArtists: async (parent: unknown, args: { userId: string }): Promise<FollowingResult[]> => {
+            try {
+                // Verify that the user exists.
+                const user = await findUserById(args.userId);
+                if (!user) throw new NotFoundError('User');
+
+                // Populate the user's followed artists.
+                await user.populate('followedArtists').execPopulate();
+                return user.followedArtists.map((followedArtist: ArtistDocument) => ({
+                    id: followedArtist.id,
+                    name: followedArtist.name,
+                    pictureUrl: followedArtist.profilePictureUrl,
+                }));
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    throw new ApolloError(error.toString(), '404');
+                } else {
+                    throw new ApolloError('Unknown error');
+                }
+            }
+        },
+        getUserFollowingAlbums: async (parent: unknown, args: { userId: string }): Promise<FollowingResult[]> => {
+            try {
+                // Verify that the user exists.
+                const user = await findUserById(args.userId);
+                if (!user) throw new NotFoundError('User');
+
+                // Populate the user's followed albums.
+                await user.populate('followedAlbums').execPopulate();
+                // Populate the artists for each followed album.
+                let followedAlbum: AlbumDocument;
+                for (followedAlbum of user.followedAlbums) {
+                    await followedAlbum.populate('artists').execPopulate();
+                }
+
+                return user.followedAlbums.map((followedAlbum: AlbumDocument) => ({
+                    id: followedAlbum.id,
+                    name: followedAlbum.title,
+                    pictureUrl: followedAlbum.coverArtUrl,
+                }));
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    throw new ApolloError(error.toString(), '404');
+                } else {
+                    throw new ApolloError('Unknown error');
+                }
+            }
+        },
+        getUserFollowingTracks: async (parent: unknown, args: { userId: string }): Promise<FollowingResult[]> => {
+            try {
+                // Verify that the user exists.
+                const user = await findUserById(args.userId);
+                if (!user) throw new NotFoundError('User');
+
+                // Populate the user's followed tracks.
+                await user.populate('followedTracks').execPopulate();
+                // Populate the album and artists for each followed track.
+                let followedTrack: TrackDocument;
+                for (followedTrack of user.followedTracks) {
+                    await followedTrack.populate('album').populate('artists').execPopulate();
+                }
+
+                // Return the list of followed tracks.
+                return user.followedTracks.map((followedTrack: TrackDocument) => ({
+                    id: followedTrack.id,
+                    name: followedTrack.title,
+                    pictureUrl: followedTrack.album.coverArtUrl,
+                }));
+            } catch (error) {
+                if (error instanceof NotFoundError) {
+                    throw new ApolloError(error.toString(), '404');
+                } else {
+                    throw new ApolloError('Unknown error');
+                }
+            }
         },
         getPostComments: async (parent: unknown, args: { postId: string }): Promise<PostComment[]> => {
             let post: PostDocument;

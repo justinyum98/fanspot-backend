@@ -96,6 +96,144 @@ export async function unfollowUser(
     return [currentUserDoc, targetUserDoc];
 }
 
+export async function followArtist(
+    currentUser: UserDocument,
+    artist: ArtistDocument,
+): Promise<[UserDocument, ArtistDocument]> {
+    try {
+        // Check if the user is already following the artist.
+        if (currentUser.followedArtists.includes(artist.id) && artist.followers.includes(currentUser.id))
+            throw new ConflictError('Already following the artist.');
+
+        // Follow the artist.
+        currentUser.followedArtists.push(artist.id);
+        artist.followers.push(currentUser.id);
+
+        // Save the changes.
+        await currentUser.save();
+        await artist.save();
+
+        return [currentUser, artist];
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function unfollowArtist(
+    currentUser: UserDocument,
+    artist: ArtistDocument,
+): Promise<[UserDocument, ArtistDocument]> {
+    try {
+        // Verify that the user is following the artist.
+        if (!(currentUser.followedArtists.includes(artist.id) && artist.followers.includes(currentUser.id)))
+            throw new ConflictError('Not following the artist.');
+
+        // Unfollow the artist.
+        currentUser.followedArtists.pull(artist.id);
+        artist.followers.pull(currentUser.id);
+
+        // Save the changes.
+        await currentUser.save();
+        await artist.save();
+
+        return [currentUser, artist];
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function followAlbum(
+    currentUser: UserDocument,
+    album: AlbumDocument,
+): Promise<[UserDocument, AlbumDocument]> {
+    try {
+        // Check if the user is already following the album.
+        if (currentUser.followedAlbums.includes(album.id) && album.followers.includes(currentUser.id))
+            throw new ConflictError('Already following the album.');
+
+        // Follow the album.
+        currentUser.followedAlbums.push(album.id);
+        album.followers.push(currentUser.id);
+
+        // Save the changes.
+        await currentUser.save();
+        await album.save();
+
+        return [currentUser, album];
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function unfollowAlbum(
+    currentUser: UserDocument,
+    album: AlbumDocument,
+): Promise<[UserDocument, AlbumDocument]> {
+    try {
+        // Verify that the user is following the album.
+        if (!(currentUser.followedAlbums.includes(album.id) && album.followers.includes(currentUser.id)))
+            throw new ConflictError('Not following the album.');
+
+        // Unfollow the album.
+        currentUser.followedAlbums.pull(album.id);
+        album.followers.pull(currentUser.id);
+
+        // Save the changes.
+        await currentUser.save();
+        await album.save();
+
+        return [currentUser, album];
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function followTrack(
+    currentUser: UserDocument,
+    track: TrackDocument,
+): Promise<[UserDocument, TrackDocument]> {
+    try {
+        // Check if the user is already following the track.
+        if (currentUser.followedTracks.includes(track.id) && track.followers.includes(currentUser.id))
+            throw new ConflictError('Already following the track.');
+
+        // Follow the track.
+        currentUser.followedTracks.push(track.id);
+        track.followers.push(currentUser.id);
+
+        // Save the changes.
+        await currentUser.save();
+        await track.save();
+
+        return [currentUser, track];
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function unfollowTrack(
+    currentUser: UserDocument,
+    track: TrackDocument,
+): Promise<[UserDocument, TrackDocument]> {
+    try {
+        // Verify that the user is following the track.
+        if (!(currentUser.followedTracks.includes(track.id) && track.followers.includes(currentUser.id)))
+            throw new ConflictError('Not following the track.');
+
+        // Unfollow the track.
+        currentUser.followedTracks.pull(track.id);
+        track.followers.pull(currentUser.id);
+
+        // Save the changes.
+        await currentUser.save();
+        await track.save();
+
+        return [currentUser, track];
+    } catch (error) {
+        throw error;
+    }
+}
+
 export async function likePost(currentUser: UserDocument, post: PostDocument): Promise<[UserDocument, PostDocument]> {
     try {
         // Check if the user already liked the post.

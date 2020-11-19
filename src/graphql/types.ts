@@ -16,6 +16,12 @@ export interface Follower {
     profilePictureUrl: string;
 }
 
+export interface FollowingResult {
+    id: string;
+    name: string;
+    pictureUrl: string | null;
+}
+
 export interface PostComment {
     id: string;
     poster: Follower;
@@ -44,6 +50,18 @@ export interface AuthPayload {
 export interface FollowMutationPayload {
     currentUserFollowing: string[];
     targetUserFollowers: string[];
+}
+
+export interface FollowArtistMutationResponse extends MutationResponse {
+    artistId: string;
+}
+
+export interface FollowAlbumMutationResponse extends MutationResponse {
+    albumId: string;
+}
+
+export interface FollowTrackMutationResponse extends MutationResponse {
+    trackId: string;
 }
 
 export interface CreatePostMutationResponse extends MutationResponse {

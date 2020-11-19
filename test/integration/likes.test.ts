@@ -1179,7 +1179,6 @@ describe('Likes feature', () => {
                 mutation: UNDO_LIKE_TRACK,
                 variables: requiredData,
             });
-            console.log(res);
             const payload = res.data.undoLikeTrack;
             currentUser = await findUserById(currentUser.id);
             trackDoc = await findTrackById(trackDoc.id);

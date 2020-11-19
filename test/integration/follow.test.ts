@@ -817,7 +817,6 @@ describe('Follow feature', () => {
                 },
             });
             const payload = res.data.getUserFollowingArtists;
-            console.log(payload);
             currentUser = await findUserById(currentUser.id);
             artistDoc = await findArtistById(artistDoc.id);
 
@@ -829,7 +828,6 @@ describe('Follow feature', () => {
                     pictureUrl: artistDoc.profilePictureUrl,
                 },
             ];
-            console.log(expectedPayload);
             expect(payload).toMatchObject(expectedPayload);
         });
 

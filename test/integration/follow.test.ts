@@ -7,6 +7,7 @@ import {
     FollowAlbumMutationResponse,
     FollowArtistMutationResponse,
     Follower,
+    FollowingResult,
     FollowMutationPayload,
     FollowTrackMutationResponse,
 } from '../../src/graphql/types';
@@ -24,6 +25,160 @@ import { findTrackById } from '../../src/database/dataAccess/Track';
 describe('Follow feature', () => {
     let connection: mongoose.Connection;
 
+    const FOLLOW_USER = gql`
+        mutation FollowUser($targetUserId: ID!) {
+            follow(targetUserId: $targetUserId) {
+                currentUserFollowing
+                targetUserFollowers
+            }
+        }
+    `;
+
+    const UNFOLLOW_USER = gql`
+        mutation UnfollowUser($targetUserId: ID!) {
+            unfollow(targetUserId: $targetUserId) {
+                currentUserFollowing
+                targetUserFollowers
+            }
+        }
+    `;
+
+    const FOLLOW_ARTIST = gql`
+        mutation FollowArtist($artistId: ID!) {
+            followArtist(artistId: $artistId) {
+                code
+                success
+                message
+                artistId
+            }
+        }
+    `;
+
+    const UNFOLLOW_ARTIST = gql`
+        mutation UnfollowArtist($artistId: ID!) {
+            unfollowArtist(artistId: $artistId) {
+                code
+                success
+                message
+                artistId
+            }
+        }
+    `;
+
+    const FOLLOW_ALBUM = gql`
+        mutation FollowAlbum($albumId: ID!) {
+            followAlbum(albumId: $albumId) {
+                code
+                success
+                message
+                albumId
+            }
+        }
+    `;
+
+    const UNFOLLOW_ALBUM = gql`
+        mutation UnfollowAlbum($albumId: ID!) {
+            unfollowAlbum(albumId: $albumId) {
+                code
+                success
+                message
+                albumId
+            }
+        }
+    `;
+
+    const FOLLOW_TRACK = gql`
+        mutation FollowTrack($trackId: ID!) {
+            followTrack(trackId: $trackId) {
+                code
+                success
+                message
+                trackId
+            }
+        }
+    `;
+
+    const UNFOLLOW_TRACK = gql`
+        mutation UnfollowTrack($trackId: ID!) {
+            unfollowTrack(trackId: $trackId) {
+                code
+                success
+                message
+                trackId
+            }
+        }
+    `;
+
+    const GET_CURRENT_USER_FOLLOWING = gql`
+        query GetCurrentUserFollowing {
+            getCurrentUserFollowing {
+                id
+                username
+                profilePictureUrl
+            }
+        }
+    `;
+
+    const GET_CURRENT_USER_FOLLOWERS = gql`
+        query GetCurrentUserFollowers {
+            getCurrentUserFollowers {
+                id
+                username
+                profilePictureUrl
+            }
+        }
+    `;
+
+    const GET_USER_FOLLOWING = gql`
+        query GetUserFollowing($userId: ID!) {
+            getUserFollowing(userId: $userId) {
+                id
+                username
+                profilePictureUrl
+            }
+        }
+    `;
+
+    const GET_USER_FOLLOWERS = gql`
+        query GetUserFollowers($userId: ID!) {
+            getUserFollowers(userId: $userId) {
+                id
+                username
+                profilePictureUrl
+            }
+        }
+    `;
+
+    const GET_USER_FOLLOWING_ARTISTS = gql`
+        query GetUserFollowingArtists($userId: ID!) {
+            getUserFollowingArtists(userId: $userId) {
+                id
+                name
+                pictureUrl
+            }
+        }
+    `;
+
+    const GET_USER_FOLLOWING_ALBUMS = gql`
+        query GetUserFollowingAlbums($userId: ID!) {
+            getUserFollowingAlbums(userId: $userId) {
+                id
+                name
+                pictureUrl
+            }
+        }
+    `;
+
+    const GET_USER_FOLLOWING_TRACKS = gql`
+        query GetUserFollowingTracks($userId: ID!) {
+            getUserFollowingTracks(userId: $userId) {
+                id
+                name
+                pictureUrl
+            }
+        }
+    `;
+
     beforeAll(async () => {
         connection = await connectDatabase();
     });
@@ -40,90 +195,6 @@ describe('Follow feature', () => {
         let artistDoc: ArtistDocument;
         let albumDoc: AlbumDocument;
         let trackDoc: TrackDocument;
-
-        const FOLLOW_USER = gql`
-            mutation FollowUser($targetUserId: ID!) {
-                follow(targetUserId: $targetUserId) {
-                    currentUserFollowing
-                    targetUserFollowers
-                }
-            }
-        `;
-
-        const UNFOLLOW_USER = gql`
-            mutation UnfollowUser($targetUserId: ID!) {
-                unfollow(targetUserId: $targetUserId) {
-                    currentUserFollowing
-                    targetUserFollowers
-                }
-            }
-        `;
-
-        const FOLLOW_ARTIST = gql`
-            mutation FollowArtist($artistId: ID!) {
-                followArtist(artistId: $artistId) {
-                    code
-                    success
-                    message
-                    artistId
-                }
-            }
-        `;
-
-        const UNFOLLOW_ARTIST = gql`
-            mutation UnfollowArtist($artistId: ID!) {
-                unfollowArtist(artistId: $artistId) {
-                    code
-                    success
-                    message
-                    artistId
-                }
-            }
-        `;
-
-        const FOLLOW_ALBUM = gql`
-            mutation FollowAlbum($albumId: ID!) {
-                followAlbum(albumId: $albumId) {
-                    code
-                    success
-                    message
-                    albumId
-                }
-            }
-        `;
-
-        const UNFOLLOW_ALBUM = gql`
-            mutation UnfollowAlbum($albumId: ID!) {
-                unfollowAlbum(albumId: $albumId) {
-                    code
-                    success
-                    message
-                    albumId
-                }
-            }
-        `;
-
-        const FOLLOW_TRACK = gql`
-            mutation FollowTrack($trackId: ID!) {
-                followTrack(trackId: $trackId) {
-                    code
-                    success
-                    message
-                    trackId
-                }
-            }
-        `;
-
-        const UNFOLLOW_TRACK = gql`
-            mutation UnfollowTrack($trackId: ID!) {
-                unfollowTrack(trackId: $trackId) {
-                    code
-                    success
-                    message
-                    trackId
-                }
-            }
-        `;
 
         beforeAll(async () => {
             currentUser = await createUser(
@@ -567,46 +638,9 @@ describe('Follow feature', () => {
         let client: ApolloServerTestClient;
         let currentUser: UserDocument;
         let targetUser: UserDocument;
-
-        const GET_CURRENT_USER_FOLLOWING = gql`
-            query GetCurrentUserFollowing {
-                getCurrentUserFollowing {
-                    id
-                    username
-                    profilePictureUrl
-                }
-            }
-        `;
-
-        const GET_CURRENT_USER_FOLLOWERS = gql`
-            query GetCurrentUserFollowers {
-                getCurrentUserFollowers {
-                    id
-                    username
-                    profilePictureUrl
-                }
-            }
-        `;
-
-        const GET_USER_FOLLOWING = gql`
-            query GetUserFollowing($userId: ID!) {
-                getUserFollowing(userId: $userId) {
-                    id
-                    username
-                    profilePictureUrl
-                }
-            }
-        `;
-
-        const GET_USER_FOLLOWERS = gql`
-            query GetUserFollowers($userId: ID!) {
-                getUserFollowers(userId: $userId) {
-                    id
-                    username
-                    profilePictureUrl
-                }
-            }
-        `;
+        let artistDoc: ArtistDocument;
+        let albumDoc: AlbumDocument;
+        let trackDoc: TrackDocument;
 
         beforeAll(async () => {
             currentUser = await createUser(
@@ -615,6 +649,18 @@ describe('Follow feature', () => {
                 faker.internet.email(),
             );
             targetUser = await createUser(faker.internet.userName(), faker.internet.password(), faker.internet.email());
+            artistDoc = new ArtistModel({ name: faker.internet.userName() });
+            await artistDoc.save();
+            albumDoc = new AlbumModel({ title: faker.lorem.word(), albumType: 'album', releaseDate: new Date() });
+            await albumDoc.save();
+            trackDoc = new TrackModel({
+                title: faker.lorem.words(2),
+                explicit: true,
+                trackNumber: 1,
+                duration: 10000,
+                album: albumDoc.id,
+            });
+            await trackDoc.save();
             const token = generateJWT(currentUser.id, currentUser.username);
             server = createTestServer({ token });
             client = createTestClient(server);
@@ -622,6 +668,9 @@ describe('Follow feature', () => {
 
         afterAll(async () => {
             await UserModel.deleteMany({}).exec();
+            await ArtistModel.findByIdAndDelete(artistDoc.id);
+            await AlbumModel.findByIdAndDelete(albumDoc.id);
+            await TrackModel.findByIdAndDelete(trackDoc.id);
         });
 
         it("can get current user's list of followers", async () => {
@@ -743,6 +792,120 @@ describe('Follow feature', () => {
             expect(res.data).toBeNull();
             expect(res.errors).toBeDefined();
             expect(res.errors[0].message).toEqual("User's follow setting is set to private.");
+        });
+
+        it('can get the artists that the user is following', async () => {
+            // ARRANGE
+            // First, follow the artist.
+            const followArtistRes = await client.mutate({
+                mutation: FOLLOW_ARTIST,
+                variables: {
+                    artistId: artistDoc.id,
+                },
+            });
+            currentUser = await findUserById(currentUser.id);
+            artistDoc = await findArtistById(artistDoc.id);
+            expect(followArtistRes.data.followArtist).toBeDefined();
+            expect(currentUser.followedArtists.length).toEqual(1);
+            expect(artistDoc.followers.length).toEqual(1);
+
+            // ACT
+            const res = await client.query({
+                query: GET_USER_FOLLOWING_ARTISTS,
+                variables: {
+                    userId: currentUser.id,
+                },
+            });
+            const payload = res.data.getUserFollowingArtists;
+            console.log(payload);
+            currentUser = await findUserById(currentUser.id);
+            artistDoc = await findArtistById(artistDoc.id);
+
+            // ASSERT
+            const expectedPayload: FollowingResult[] = [
+                {
+                    id: artistDoc.id,
+                    name: artistDoc.name,
+                    pictureUrl: artistDoc.profilePictureUrl,
+                },
+            ];
+            console.log(expectedPayload);
+            expect(payload).toMatchObject(expectedPayload);
+        });
+
+        it('can get the albums that the user is following', async () => {
+            // ARRANGE
+            // First, follow the album.
+            const followAlbumRes = await client.mutate({
+                mutation: FOLLOW_ALBUM,
+                variables: {
+                    albumId: albumDoc.id,
+                },
+            });
+            currentUser = await findUserById(currentUser.id);
+            albumDoc = await findAlbumById(albumDoc.id);
+            expect(followAlbumRes.data.followAlbum).toBeDefined();
+            expect(currentUser.followedAlbums.length).toEqual(1);
+            expect(albumDoc.followers.length).toEqual(1);
+
+            // ACT
+            const res = await client.query({
+                query: GET_USER_FOLLOWING_ALBUMS,
+                variables: {
+                    userId: currentUser.id,
+                },
+            });
+            const payload = res.data.getUserFollowingAlbums;
+            currentUser = await findUserById(currentUser.id);
+            albumDoc = await findAlbumById(albumDoc.id);
+
+            // ASSERT
+            const expectedPayload: FollowingResult[] = [
+                {
+                    id: albumDoc.id,
+                    name: albumDoc.title,
+                    pictureUrl: albumDoc.coverArtUrl,
+                },
+            ];
+            expect(payload).toMatchObject(expectedPayload);
+        });
+
+        it('can get the tracks that the user is following', async () => {
+            // ARRANGE
+            // First, follow the track.
+            const followTrackRes = await client.mutate({
+                mutation: FOLLOW_TRACK,
+                variables: {
+                    trackId: trackDoc.id,
+                },
+            });
+            currentUser = await findUserById(currentUser.id);
+            trackDoc = await findTrackById(trackDoc.id);
+            expect(followTrackRes.data.followTrack).toBeDefined();
+            expect(currentUser.followedTracks.length).toEqual(1);
+            expect(trackDoc.followers.length).toEqual(1);
+
+            // ACT
+            const res = await client.query({
+                query: GET_USER_FOLLOWING_TRACKS,
+                variables: {
+                    userId: currentUser.id,
+                },
+            });
+            const payload = res.data.getUserFollowingTracks;
+            currentUser = await findUserById(currentUser.id);
+            trackDoc = await findTrackById(trackDoc.id);
+            await trackDoc.populate('album').execPopulate();
+
+            // ASSERT
+            const expectedPayload: FollowingResult[] = [
+                {
+                    id: trackDoc.id,
+                    name: trackDoc.title,
+                    pictureUrl: trackDoc.album.coverArtUrl,
+                },
+            ];
+            expect(payload).toMatchObject(expectedPayload);
         });
     });
 });

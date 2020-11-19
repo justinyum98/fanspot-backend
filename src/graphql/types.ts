@@ -16,6 +16,12 @@ export interface Follower {
     profilePictureUrl: string;
 }
 
+export interface FollowingResult {
+    id: string;
+    name: string;
+    pictureUrl: string | null;
+}
+
 export interface PostComment {
     id: string;
     poster: Follower;

@@ -132,6 +132,9 @@ export const typeDefs = gql`
         getUserFollowers(userId: ID!): [Follower!]!
         getUserFollowing(userId: ID!): [Follower!]!
         getUserPosts(userId: ID!): [Post!]!
+        getUserFollowingArtists(userId: ID!): [FollowingResult!]!
+        getUserFollowingAlbums(userId: ID!): [FollowingResult!]!
+        getUserFollowingTracks(userId: ID!): [FollowingResult!]!
 
         # Private (requires token)
         ## User
@@ -163,6 +166,12 @@ export const typeDefs = gql`
         id: ID!
         username: String!
         profilePictureUrl: URL
+    }
+
+    type FollowingResult {
+        id: ID!
+        name: String!
+        pictureUrl: String
     }
 
     type PostComment {
